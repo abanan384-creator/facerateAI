@@ -4,21 +4,47 @@ import React, { useState, useRef, useEffect } from 'react';
 import { analyzeFace, AnalysisResult } from '@/lib/analyzeFace';
 import { drawAnalysis } from '@/lib/visualize';
 import { ResultCard } from '@/components/ResultCard';
-import { Upload, Camera, Loader2, AlertCircle } from 'lucide-react';
+import { CameraCapture } from '@/components/CameraCapture';
+import { Upload, Camera, Loader2, AlertCircle, User, UserPlus } from 'lucide-react';
+
+type Tab = 'front' | 'side';
 
 export default function Home() {
-    const [image, setImage] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<Tab>('front');
+
+    // Images
+    const [frontImage, setFrontImage] = useState<string | null>(null);
+    const [sideImage, setSideImage] = useState<string | null>(null);
+
+    // Results
+    const [frontResult, setFrontResult] = useState<AnalysisResult | null>(null);
+    const [sideResult, setSideResult] = useState<AnalysisResult | null>(null);
+
     const [loading, setLoading] = useState(false);
-    const [result, setResult] = useState<AnalysisResult | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [showCamera, setShowCamera] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const imageRef = useRef<HTMLImageElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
+    // Get current state based on tab
+    const currentImage = activeTab === 'front' ? frontImage : sideImage;
+    const currentResult = activeTab === 'front' ? frontResult : sideResult;
+
+    const setImage = (img: string | null) => {
+        if (activeTab === 'front') setFrontImage(img);
+        else setSideImage(img);
+
+        // Clear result when image changes
+        if (activeTab === 'front') setFrontResult(null);
+        else setSideResult(null);
+        setError(null);
+    };
+
     // Draw analysis overlay when result changes
     useEffect(() => {
-        if (result && result.landmarks && canvasRef.current && imageRef.current) {
+        if (currentResult && currentResult.landmarks && canvasRef.current && imageRef.current) {
             const canvas = canvasRef.current;
             const img = imageRef.current;
 
@@ -28,10 +54,13 @@ export default function Home() {
 
             const ctx = canvas.getContext('2d');
             if (ctx) {
-                drawAnalysis(ctx, result.landmarks, canvas.width, canvas.height);
+                drawAnalysis(ctx, currentResult.landmarks, canvas.width, canvas.height);
             }
+        } else if (canvasRef.current) {
+            const ctx = canvasRef.current.getContext('2d');
+            ctx?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
         }
-    }, [result]);
+    }, [currentResult, activeTab]);
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -39,16 +68,15 @@ export default function Home() {
             const reader = new FileReader();
             reader.onload = (event) => {
                 setImage(event.target?.result as string);
-                setResult(null);
                 setError(null);
-                // Clear canvas
-                if (canvasRef.current) {
-                    const ctx = canvasRef.current.getContext('2d');
-                    ctx?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-                }
             };
             reader.readAsDataURL(file);
         }
+    };
+
+    const handleCameraCapture = (imageSrc: string) => {
+        setImage(imageSrc);
+        setShowCamera(false);
     };
 
     const processImage = async () => {
@@ -61,11 +89,14 @@ export default function Home() {
             // Small delay to let the UI update
             await new Promise(resolve => setTimeout(resolve, 100));
             const analysis = await analyzeFace(imageRef.current);
-            setResult(analysis);
+
+            if (activeTab === 'front') setFrontResult(analysis);
+            else setSideResult(analysis);
+
         } catch (err: any) {
             console.error(err);
             if (err.message === 'NO_FACE_DETECTED') {
-                setError('NO_FACE_DETECTED: Please upload a clear photo of a face.');
+                setError('NO_FACE_DETECTED: Please ensure the face is clearly visible.');
             } else {
                 setError('An error occurred during analysis. Please try again.');
             }
@@ -76,24 +107,42 @@ export default function Home() {
 
     return (
         <main className="min-h-screen flex flex-col items-center justify-center p-4 md:p-24 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-900 via-black to-black text-white">
-            <div className="z-10 w-full max-w-5xl flex flex-col items-center text-center">
+            <div className="z-10 w-full max-w-6xl flex flex-col items-center text-center">
                 <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-4 animate-in fade-in slide-in-from-bottom-4 duration-1000">
                     LOOKS<span className="text-blue-500 font-light italic">MAXING</span>
                 </h1>
-                <p className="text-gray-400 text-lg md:text-xl max-w-2xl mb-12">
+                <p className="text-gray-400 text-lg md:text-xl max-w-2xl mb-8">
                     Harness the power of AI to analyze your facial metrics and discover your potential.
                 </p>
+
+                {/* Tabs */}
+                <div className="flex p-1 bg-white/5 rounded-full mb-8 border border-white/10">
+                    <button
+                        onClick={() => setActiveTab('front')}
+                        className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold transition-all ${activeTab === 'front' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25' : 'text-gray-400 hover:text-white'}`}
+                    >
+                        <User className="w-4 h-4" />
+                        FRONT PROFILE
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('side')}
+                        className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold transition-all ${activeTab === 'side' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25' : 'text-gray-400 hover:text-white'}`}
+                    >
+                        <UserPlus className="w-4 h-4" />
+                        SIDE PROFILE
+                    </button>
+                </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start w-full">
                     {/* Left Side: Upload / Preview */}
                     <div className="flex flex-col items-center space-y-6">
-                        <div className="relative group w-full aspect-square max-w-sm rounded-[2rem] overflow-hidden border-2 border-dashed border-white/20 bg-white/5 hover:border-blue-500/50 transition-all duration-500">
-                            {image ? (
+                        <div className="relative group w-full aspect-square max-w-sm rounded-[2rem] overflow-hidden border-2 border-dashed border-white/20 bg-white/5 hover:border-blue-500/50 transition-all duration-500 flex items-center justify-center">
+                            {currentImage ? (
                                 <div className="relative w-full h-full">
                                     {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img
                                         ref={imageRef}
-                                        src={image}
+                                        src={currentImage}
                                         alt="Preview"
                                         className="w-full h-full object-contain"
                                     />
@@ -103,12 +152,26 @@ export default function Home() {
                                     />
                                 </div>
                             ) : (
-                                <div
-                                    className="w-full h-full flex flex-col items-center justify-center cursor-pointer"
-                                    onClick={() => fileInputRef.current?.click()}
-                                >
-                                    <Upload className="w-12 h-12 text-gray-500 mb-4 group-hover:text-blue-500 transition-colors" />
-                                    <span className="text-gray-500 group-hover:text-gray-300 transition-colors">Click to upload photo</span>
+                                <div className="w-full h-full flex flex-col items-center justify-center gap-4">
+                                    <button
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="flex flex-col items-center group/btn"
+                                    >
+                                        <Upload className="w-12 h-12 text-gray-500 mb-4 group-hover/btn:text-blue-500 transition-colors" />
+                                        <span className="text-gray-500 group-hover/btn:text-gray-300 transition-colors">Upload Photo</span>
+                                    </button>
+                                    <div className="w-full px-12 flex items-center gap-4">
+                                        <div className="h-px bg-white/10 flex-1"></div>
+                                        <span className="text-xs text-gray-600 font-bold">OR</span>
+                                        <div className="h-px bg-white/10 flex-1"></div>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowCamera(true)}
+                                        className="flex items-center gap-2 text-gray-400 hover:text-blue-400 transition-colors text-sm font-bold uppercase tracking-wider"
+                                    >
+                                        <Camera className="w-4 h-4" />
+                                        Open Camera
+                                    </button>
                                 </div>
                             )}
 
@@ -123,17 +186,22 @@ export default function Home() {
 
                         <div className="flex gap-4 w-full max-w-sm">
                             <button
-                                onClick={() => fileInputRef.current?.click()}
-                                className="flex-1 flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white py-4 rounded-2xl font-bold transition-all border border-white/10"
+                                onClick={() => {
+                                    setImage(null);
+                                    // Reset file input
+                                    if (fileInputRef.current) fileInputRef.current.value = '';
+                                }}
+                                disabled={!currentImage}
+                                className="flex-1 flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white py-4 rounded-2xl font-bold transition-all border border-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <Camera className="w-5 h-5" />
-                                REPLACE
+                                <Upload className="w-5 h-5" />
+                                CLEAR
                             </button>
 
                             <button
                                 onClick={processImage}
-                                disabled={!image || loading}
-                                className={`flex-[2] py-4 rounded-2xl font-black tracking-widest transition-all shadow-lg shadow-blue-500/20 ${!image || loading
+                                disabled={!currentImage || loading}
+                                className={`flex-[2] py-4 rounded-2xl font-black tracking-widest transition-all shadow-lg shadow-blue-500/20 ${!currentImage || loading
                                     ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
                                     : 'bg-gradient-to-r from-blue-600 to-blue-400 hover:scale-[1.02] active:scale-[0.98]'
                                     }`}
@@ -147,6 +215,12 @@ export default function Home() {
                             </button>
                         </div>
 
+                        {activeTab === 'side' && (
+                            <div className="text-xs text-gray-500 bg-white/5 px-4 py-2 rounded-lg border border-white/5">
+                                Note: Side profile analysis is experimental. Ensure clear lighting.
+                            </div>
+                        )}
+
                         {error && (
                             <div className="flex items-center gap-2 text-red-400 bg-red-400/10 px-4 py-2 rounded-lg border border-red-400/20">
                                 <AlertCircle className="w-4 h-4" />
@@ -157,22 +231,34 @@ export default function Home() {
 
                     {/* Right Side: Results */}
                     <div className="flex flex-col items-center lg:items-start justify-center min-h-[400px]">
-                        {result ? (
+                        {currentResult ? (
                             <div className="animate-in fade-in zoom-in-95 duration-700 w-full flex justify-center lg:justify-start">
-                                <ResultCard result={result} />
+                                <ResultCard result={currentResult} />
                             </div>
                         ) : (
                             <div className="text-center lg:text-left space-y-4 opacity-40">
                                 <div className="w-16 h-1 bg-blue-500 rounded-full mx-auto lg:mx-0"></div>
-                                <h3 className="text-2xl font-bold">Waiting for Scan</h3>
+                                <h3 className="text-2xl font-bold">
+                                    {activeTab === 'front' ? 'Waiting for Front Scan' : 'Waiting for Side Scan'}
+                                </h3>
                                 <p className="text-gray-400 max-w-xs">
-                                    Upload a front-facing photo with good lighting for the most accurate landmark detection.
+                                    {activeTab === 'front'
+                                        ? 'Upload a front-facing photo with good lighting for accurate metric analysis.'
+                                        : 'Upload a side profile photo to analyze jawline projection and posture.'}
                                 </p>
                             </div>
                         )}
                     </div>
                 </div>
             </div>
+
+            {/* Camera Modal */}
+            {showCamera && (
+                <CameraCapture
+                    onCapture={handleCameraCapture}
+                    onClose={() => setShowCamera(false)}
+                />
+            )}
 
             {/* Footer / Credits */}
             <footer className="mt-24 text-gray-600 text-xs">
