@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { analyzeFace, AnalysisResult } from '@/lib/analyzeFace';
+import { drawAnalysis } from '@/lib/visualize';
 import { ResultCard } from '@/components/ResultCard';
 import { Upload, Camera, Loader2, AlertCircle } from 'lucide-react';
 
@@ -13,6 +14,24 @@ export default function Home() {
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const imageRef = useRef<HTMLImageElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+
+    // Draw analysis overlay when result changes
+    useEffect(() => {
+        if (result && result.landmarks && canvasRef.current && imageRef.current) {
+            const canvas = canvasRef.current;
+            const img = imageRef.current;
+
+            // Match canvas resolution to image natural size
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                drawAnalysis(ctx, result.landmarks, canvas.width, canvas.height);
+            }
+        }
+    }, [result]);
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -22,6 +41,11 @@ export default function Home() {
                 setImage(event.target?.result as string);
                 setResult(null);
                 setError(null);
+                // Clear canvas
+                if (canvasRef.current) {
+                    const ctx = canvasRef.current.getContext('2d');
+                    ctx?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+                }
             };
             reader.readAsDataURL(file);
         }
@@ -65,13 +89,19 @@ export default function Home() {
                     <div className="flex flex-col items-center space-y-6">
                         <div className="relative group w-full aspect-square max-w-sm rounded-[2rem] overflow-hidden border-2 border-dashed border-white/20 bg-white/5 hover:border-blue-500/50 transition-all duration-500">
                             {image ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                    ref={imageRef}
-                                    src={image}
-                                    alt="Preview"
-                                    className="w-full h-full object-cover"
-                                />
+                                <div className="relative w-full h-full">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                        ref={imageRef}
+                                        src={image}
+                                        alt="Preview"
+                                        className="w-full h-full object-contain"
+                                    />
+                                    <canvas
+                                        ref={canvasRef}
+                                        className="absolute inset-0 w-full h-full pointer-events-none"
+                                    />
+                                </div>
                             ) : (
                                 <div
                                     className="w-full h-full flex flex-col items-center justify-center cursor-pointer"
@@ -104,8 +134,8 @@ export default function Home() {
                                 onClick={processImage}
                                 disabled={!image || loading}
                                 className={`flex-[2] py-4 rounded-2xl font-black tracking-widest transition-all shadow-lg shadow-blue-500/20 ${!image || loading
-                                        ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
-                                        : 'bg-gradient-to-r from-blue-600 to-blue-400 hover:scale-[1.02] active:scale-[0.98]'
+                                    ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                                    : 'bg-gradient-to-r from-blue-600 to-blue-400 hover:scale-[1.02] active:scale-[0.98]'
                                     }`}
                             >
                                 {loading ? (

@@ -42,6 +42,12 @@ export const ResultCard = ({ result }: { result: AnalysisResult }) => {
                 <Metric label="Skin Quality" value={result.skin_quality} color="bg-yellow-500" />
                 <Metric label="Jawline" value={result.jawline} color="bg-purple-500" />
                 <Metric label="Cheekbones" value={result.cheekbones} color="bg-pink-500" />
+                <Metric label="Symmetry" value={result.symmetry} color="bg-cyan-500" />
+                <Metric label="Golden Ratio" value={result.golden_ratio} color="bg-orange-500" />
+                <Metric label="Facial Thirds" value={result.facial_thirds} color="bg-teal-500" />
+                <Metric label="Facial Fifths" value={result.facial_fifths} color="bg-indigo-500" />
+                <Metric label="Eye Score" value={result.eye_score} color="bg-sky-400" />
+                <Metric label="Nose Score" value={result.nose_score} color="bg-rose-400" />
             </div>
 
             {result.warnings.length > 0 && (
