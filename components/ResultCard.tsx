@@ -5,24 +5,27 @@ interface MetricProps {
     label: string;
     value: number;
     color?: string;
+    highlight?: boolean;
 }
 
-const ProgressBar = ({ value, color = 'bg-blue-500' }: { value: number; color?: string }) => (
-    <div className="w-full bg-gray-800 rounded-full h-2.5 mt-1 overflow-hidden">
+const ProgressBar = ({ value, color = 'bg-white/80' }: { value: number; color?: string }) => (
+    <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden mt-1.5">
         <div
-            className={`h-full rounded-full transition-all duration-1000 ${color}`}
+            className={`h-full ${color} transition-all duration-1000 ease-out`}
             style={{ width: `${value}%` }}
         />
     </div>
 );
 
-const Metric = ({ label, value, color }: MetricProps) => (
-    <div className="mb-4">
-        <div className="flex justify-between items-center mb-1">
-            <span className="text-sm font-medium text-gray-400 uppercase tracking-wider">{label}</span>
-            <span className="text-lg font-bold text-white">{value}</span>
+const Metric = ({ label, value, color, highlight }: MetricProps) => (
+    <div className="flex flex-col mb-4 last:mb-0">
+        <div className="flex justify-between items-end pb-1">
+            <span className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-medium">{label}</span>
+            <div className={`text-lg font-light tracking-wide ${highlight ? 'text-cyan-400' : 'text-white'}`}>
+                {value}
+            </div>
         </div>
-        <ProgressBar value={value} color={color} />
+        <ProgressBar value={value} color={color || (highlight ? "bg-cyan-400" : "bg-white/80")} />
     </div>
 );
 
@@ -30,32 +33,43 @@ export const ResultCard = ({ result }: { result: AnalysisResult }) => {
     return (
         <div className="w-full max-w-md bg-black/60 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
             <div className="text-center mb-8">
-                <h2 className="text-4xl font-black bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-                    {result.overall}
+                <h2 className="text-6xl font-thin tracking-tighter text-white mb-2">
+                    {(result.overall / 10).toFixed(1)}
                 </h2>
-                <p className="text-gray-500 text-sm mt-1">OVERALL SCORE</p>
+                <p className="text-cyan-400 text-xs font-bold tracking-[0.3em] uppercase">Overall Score</p>
             </div>
 
-            <div className="space-y-2">
-                <Metric label="Potential" value={result.potential} color="bg-green-500" />
-                <Metric label="Masculinity" value={result.masculinity} color="bg-blue-600" />
-                <Metric label="Skin Quality" value={result.skin_quality} color="bg-yellow-500" />
-                <Metric label="Jawline" value={result.jawline} color="bg-purple-500" />
-                <Metric label="Cheekbones" value={result.cheekbones} color="bg-pink-500" />
-                <Metric label="Symmetry" value={result.symmetry} color="bg-cyan-500" />
-                <Metric label="Golden Ratio" value={result.golden_ratio} color="bg-orange-500" />
-                <Metric label="Facial Thirds" value={result.facial_thirds} color="bg-teal-500" />
-                <Metric label="Facial Fifths" value={result.facial_fifths} color="bg-indigo-500" />
-                <Metric label="Eye Score" value={result.eye_score} color="bg-sky-400" />
-                <Metric label="Nose Score" value={result.nose_score} color="bg-rose-400" />
+            <div className="space-y-4">
+                <Metric label="Potential" value={result.potential} highlight />
+                <Metric label="Masculinity" value={result.masculinity} />
+                <Metric label="Jawline" value={result.jawline} />
+                <Metric label="Cheekbones" value={result.cheekbones} />
+
+                <div className="h-px bg-white/10 my-6" />
+
+                <Metric label="Symmetry" value={result.symmetry} />
+                <Metric label="Golden Ratio" value={result.golden_ratio} highlight />
+                <Metric label="Skin Quality" value={result.skin_quality} />
+            </div>
+
+            {/* Detailed Breakdown */}
+            <div className="mt-6 pt-6 border-t border-white/10 grid grid-cols-2 gap-4">
+                <div className="space-y-3">
+                    <Metric label="Facial Thirds" value={result.facial_thirds} />
+                    <Metric label="Facial Fifths" value={result.facial_fifths} />
+                </div>
+                <div className="space-y-3">
+                    <Metric label="Eye Score" value={result.eye_score} />
+                    <Metric label="Nose Score" value={result.nose_score} />
+                </div>
             </div>
 
             {result.warnings.length > 0 && (
-                <div className="mt-6 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
-                    <p className="text-xs text-yellow-500 font-bold mb-1">PHOTO QUALITY WARNINGS:</p>
+                <div className="mt-6 p-4 bg-yellow-500/5 border border-yellow-500/20 rounded-xl">
+                    <p className="text-[10px] text-yellow-500 font-bold mb-2 tracking-widest uppercase">Photo Quality Warnings</p>
                     <div className="flex flex-wrap gap-2">
                         {result.warnings.map(w => (
-                            <span key={w} className="text-[10px] bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded-full uppercase">
+                            <span key={w} className="text-[9px] bg-yellow-500/10 text-yellow-500 px-2 py-1 rounded border border-yellow-500/20 uppercase tracking-wider">
                                 {w.replace('_', ' ')}
                             </span>
                         ))}
@@ -63,9 +77,8 @@ export const ResultCard = ({ result }: { result: AnalysisResult }) => {
                 </div>
             )}
 
-            <p className="mt-8 text-[10px] text-gray-600 text-center leading-relaxed">
-                DISCLAIMER: Scores are approximate, depend on photo quality and angle.
-                This is an MVP based on client-side face landmark analysis.
+            <p className="mt-8 text-[9px] text-gray-600 text-center uppercase tracking-widest">
+                AI Estimation • Results may vary based on lighting
             </p>
         </div>
     );
