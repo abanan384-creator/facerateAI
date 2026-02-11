@@ -35,7 +35,15 @@ const INDICES = {
     cheek_right: 352, // Zygomatic
     mouth_bottom: 14,
     nose_tip: 1,
-    nose_bridge: 168
+    nose_bridge: 168,
+    glabella: 10,       // Top of forehead (Hairline) -> Actually 10 is top. 
+    // Wait. Facial thirds: Hairline-Glabella, Glabella-Subnasale, Subnasale-Menton.
+    // 10 is Top. 
+    // 168 is between eyes (Glabella/Nasion approx).
+    // 2 is Subnasale (under nose). 
+    // 152 is Chin (Menton).
+    nasion: 168,
+    subnasale: 2
 };
 
 export interface DetectionResult {
@@ -114,6 +122,41 @@ export async function scoreFace(img: HTMLImageElement): Promise<FullAnalysisResu
     // Features
     const face_width = dist(getKeypoint(INDICES.face_left), getKeypoint(INDICES.face_right));
     const face_height = dist(getKeypoint(INDICES.forehead_top), getKeypoint(INDICES.chin_bottom));
+
+    // facial thirds calculation
+    // 1. Upper: Hairline (10) to Nasion (168)
+    // 2. Middle: Nasion (168) to Subnasale (2)
+    // 3. Lower: Subnasale (2) to Menton (152)
+
+    // Note: 10 is forehead top. If detecting "hairline" is hard, we approximate with forehead top.
+    const p_hairline = getKeypoint(INDICES.forehead_top);
+    const p_nasion = getKeypoint(INDICES.nasion);
+    const p_subnasale = getKeypoint(INDICES.subnasale);
+    const p_menton = getKeypoint(INDICES.chin_bottom);
+
+    const third_1 = dist(p_hairline, p_nasion);
+    const third_2 = dist(p_nasion, p_subnasale);
+    const third_3 = dist(p_subnasale, p_menton);
+
+    const thirds_mean = (third_1 + third_2 + third_3) / 3;
+
+    // Calculate deviation score (lower deviation = higher score)
+    // If one third is 0 (impossible but safe), handle it.
+    const deviation = (
+        Math.abs(third_1 - thirds_mean) +
+        Math.abs(third_2 - thirds_mean) +
+        Math.abs(third_3 - thirds_mean)
+    );
+
+    // Normalize score: 0 deviation => 100. 
+    // Max deviation approx typically 30-40% of face height? 
+    // Let's say if deviation is > 1/3 of mean, score drops significantly.
+    // Heuristic: Score = 100 - (deviation / total_height) * 300? 
+    // deviation / thirds_mean is relative error.
+
+    const thirds_score = Math.max(0, 100 - (deviation / thirds_mean) * 50); // *50 makes it sensitive but not punishing.
+
+
     const jaw_width = dist(getKeypoint(INDICES.jaw_left), getKeypoint(INDICES.jaw_right));
     const cheek_width = dist(getKeypoint(INDICES.cheek_left), getKeypoint(INDICES.cheek_right));
     const chin_length = dist(getKeypoint(INDICES.mouth_bottom), getKeypoint(INDICES.chin_bottom));
@@ -155,7 +198,7 @@ export async function scoreFace(img: HTMLImageElement): Promise<FullAnalysisResu
 
     // 5. Overall
     const overall = Math.round(
-        0.30 * jawline + 0.25 * cheekbones + 0.20 * skin_quality + 0.25 * masculinity
+        0.25 * jawline + 0.20 * cheekbones + 0.15 * skin_quality + 0.20 * masculinity + 0.20 * clamp(thirds_score, 0, 100)
     );
 
     // 6. Potential & Warnings
@@ -193,6 +236,7 @@ export async function scoreFace(img: HTMLImageElement): Promise<FullAnalysisResu
         cheekbones,
         skin_quality,
         masculinity,
+        facial_thirds: Math.round(clamp(thirds_score, 0, 100)),
         overall,
         potential: finalPotential,
         warnings
