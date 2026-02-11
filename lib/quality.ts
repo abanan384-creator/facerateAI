@@ -1,75 +1,94 @@
-/**
- * Utility for image quality analysis (brightness, contrast, sharpness)
- */
 
+/**
+ * Image Quality Analysis
+ * Computes brightness (mean luma), contrast (stddev luma),
+ * and sharpness (laplacian variance approximation).
+ */
 export interface QualityMetrics {
     brightness: number;
     contrast: number;
     sharpness: number;
 }
 
-export function getQualityMetrics(img: HTMLImageElement | HTMLCanvasElement): QualityMetrics {
+export function getQualityMetrics(img: HTMLImageElement): QualityMetrics {
     const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const ctx = canvas.getContext('2d');
     if (!ctx) return { brightness: 0, contrast: 0, sharpness: 0 };
 
-    canvas.width = img.width;
-    canvas.height = img.height;
+    // Resize for performance (keeping aspect ratio)
+    const MAX_WIDTH = 512;
+    const scale = Math.min(1, MAX_WIDTH / img.naturalWidth);
+    canvas.width = img.naturalWidth * scale;
+    canvas.height = img.naturalHeight * scale;
 
-    if (img instanceof HTMLImageElement) {
-        ctx.drawImage(img, 0, 0);
-    } else {
-        ctx.drawImage(img, 0, 0);
-    }
-
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const data = imageData.data;
-    let r, g, b, avg;
+
     let sum = 0;
-    let sumSq = 0;
-    const count = data.length / 4;
+    let serveral = 0;
+    const lumaData: number[] = [];
 
-    const grayscale = new Float32Array(count);
-
+    // Calculate Brightness (Mean Luma)
     for (let i = 0; i < data.length; i += 4) {
-        r = data[i];
-        g = data[i + 1];
-        b = data[i + 2];
-        // Luminance formula
-        avg = (0.299 * r + 0.587 * g + 0.114 * b);
-        grayscale[i / 4] = avg;
-        sum += avg;
-        sumSq += avg * avg;
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        // Rec. 601 luma formula
+        const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+        lumaData.push(luma);
+        sum += luma;
     }
 
-    const brightness = sum / count;
-    const variance = (sumSq / count) - (brightness * brightness);
-    const contrast = Math.sqrt(Math.max(0, variance));
+    const brightness = sum / lumaData.length;
 
-    // Sharpness calculation (Laplacian variance approximation)
-    // We use a simple 3x3 kernel on grayscale
-    let lapVar = 0;
+    // Calculate Contrast (Standard Deviation of Luma)
+    let sumSqDiff = 0;
+    for (let i = 0; i < lumaData.length; i++) {
+        sumSqDiff += Math.pow(lumaData[i] - brightness, 2);
+    }
+    const variance = sumSqDiff / lumaData.length;
+    const contrast = Math.sqrt(variance);
+
+    // Calculate Sharpness (Laplacian Variance Approximation)
+    // Using a simplified edge detection kernel
+    //  0  1  0
+    //  1 -4  1
+    //  0  1  0
     const w = canvas.width;
     const h = canvas.height;
+    let edgeSum = 0;
+    let edgeSumSq = 0;
+    let edgeCount = 0;
 
     for (let y = 1; y < h - 1; y++) {
         for (let x = 1; x < w - 1; x++) {
-            const idx = y * w + x;
-            // Laplacian kernel: [[0, 1, 0], [1, -4, 1], [0, 1, 0]]
-            const lap =
-                grayscale[idx - w] +
-                grayscale[idx - 1] +
-                grayscale[idx + 1] +
-                grayscale[idx + w] -
-                4 * grayscale[idx];
-            lapVar += lap * lap;
+            const i = (y * w + x);
+            const val = lumaData[i];
+
+            // Neighbors: top, bottom, left, right
+            const top = lumaData[((y - 1) * w + x)];
+            const bottom = lumaData[((y + 1) * w + x)];
+            const left = lumaData[(y * w + (x - 1))];
+            const right = lumaData[(y * w + (x + 1))];
+
+            const laplacian = top + bottom + left + right - 4 * val;
+            edgeSum += laplacian;
+            edgeSumSq += laplacian * laplacian;
+            edgeCount++;
         }
     }
-    const sharpness = Math.sqrt(lapVar / count);
+
+    const meanLaplacian = edgeSum / edgeCount;
+    const varianceLaplacian = (edgeSumSq / edgeCount) - (meanLaplacian * meanLaplacian);
+
+    // Scale sharpness to roughly match expected range (0-250+) 
+    // Laplacian variance tends to be smaller, so we boost it
+    const sharpness = Math.sqrt(varianceLaplacian) * 2;
 
     return {
-        brightness, // 0..255
-        contrast,   // roughly 0..100
-        sharpness   // arbitrarily scaled, needs normalization
+        brightness: brightness, // 0-255
+        contrast: contrast,     // 0-128 appx
+        sharpness: sharpness    // 0-300+ appx
     };
 }

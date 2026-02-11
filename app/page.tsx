@@ -1,280 +1,273 @@
+
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import { analyzeFace, AnalysisResult } from '@/lib/analyzeFace';
-import { drawAnalysis } from '@/lib/visualize';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Mode, ScanState, ErrCode, Warning } from '@/lib/state';
+import { detectFace, scoreFace } from '@/lib/analyzeFace';
+import { UploadCard } from '@/components/UploadCard';
+import { StatusPanel } from '@/components/StatusPanel';
 import { ResultCard } from '@/components/ResultCard';
-import { CameraCapture } from '@/components/CameraCapture';
-import { Upload, Camera, Loader2, AlertCircle, User, UserPlus } from 'lucide-react';
 
-type Tab = 'front' | 'side';
+// ----- Initial State -----
+const INITIAL_STATE = (mode: Mode = 'front'): ScanState => ({
+    status: 'idle',
+    mode
+});
 
+// ----- Main Page -----
 export default function Home() {
-    const [activeTab, setActiveTab] = useState<Tab>('front');
-
-    // Images
-    const [frontImage, setFrontImage] = useState<string | null>(null);
-    const [sideImage, setSideImage] = useState<string | null>(null);
-
-    // Results
-    const [frontResult, setFrontResult] = useState<AnalysisResult | null>(null);
-    const [sideResult, setSideResult] = useState<AnalysisResult | null>(null);
-
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    // We lift state up here, strictly following the union types
+    const [state, setState] = useState<ScanState>(INITIAL_STATE('front'));
     const [showCamera, setShowCamera] = useState(false);
 
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const imageRef = useRef<HTMLImageElement>(null);
-    const canvasRef = useRef<HTMLCanvasElement>(null);
+    // Persist refs for raw elements
+    const imgRef = useRef<HTMLImageElement>(null);
 
-    // Get current state based on tab
-    const currentImage = activeTab === 'front' ? frontImage : sideImage;
-    const currentResult = activeTab === 'front' ? frontResult : sideResult;
+    // --- State Transitions ---
 
-    const setImage = (img: string | null) => {
-        if (activeTab === 'front') setFrontImage(img);
-        else setSideImage(img);
-
-        // Clear result when image changes
-        if (activeTab === 'front') setFrontResult(null);
-        else setSideResult(null);
-        setError(null);
-    };
-
-    // Draw analysis overlay when result changes
-    useEffect(() => {
-        if (currentResult && currentResult.landmarks && canvasRef.current && imageRef.current) {
-            const canvas = canvasRef.current;
-            const img = imageRef.current;
-
-            // Match canvas resolution to image natural size
-            canvas.width = img.naturalWidth;
-            canvas.height = img.naturalHeight;
-
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-                drawAnalysis(ctx, currentResult.landmarks, canvas.width, canvas.height);
-            }
-        } else if (canvasRef.current) {
-            const ctx = canvasRef.current.getContext('2d');
-            ctx?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-        }
-    }, [currentResult, activeTab]);
-
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                setImage(event.target?.result as string);
-                setError(null);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const handleCameraCapture = (imageSrc: string) => {
-        setImage(imageSrc);
+    // 1. Switch Mode (Idle -> Idle)
+    const setMode = (mode: Mode) => {
+        setState(INITIAL_STATE(mode));
         setShowCamera(false);
     };
 
-    const processImage = async () => {
-        if (!imageRef.current) return;
+    // 2. Image Selected (Idle -> ImageSelected -> auto Detect)
+    const handleImageSelect = useCallback((url: string) => {
+        setState(prev => ({ status: 'image_selected', mode: prev.mode, previewUrl: url }));
+    }, []);
 
-        setLoading(true);
-        setError(null);
+    // 3. Auto-Detect Effect
+    useEffect(() => {
+        if (state.status === 'image_selected') {
+            const startDetection = async () => {
+                // Transition to Detecting
+                setState(prev => ({ ...prev, status: 'detecting' }));
 
-        try {
-            // Small delay to let the UI update
-            await new Promise(resolve => setTimeout(resolve, 100));
-            const analysis = await analyzeFace(imageRef.current);
+                // Small delay to allow UI to render 'Detecting...'
+                await new Promise(r => setTimeout(r, 600));
 
-            if (activeTab === 'front') setFrontResult(analysis);
-            else setSideResult(analysis);
+                if (!imgRef.current) {
+                    setState(prev => ({
+                        status: 'error',
+                        mode: prev.mode,
+                        previewUrl: (prev as any).previewUrl,
+                        code: 'INTERNAL',
+                        tips: ["Image load failed. Try another file."]
+                    }));
+                    return;
+                }
 
-        } catch (err: any) {
-            console.error(err);
-            if (err.message === 'NO_FACE_DETECTED') {
-                setError('NO_FACE_DETECTED: Please ensure the face is clearly visible.');
-            } else {
-                setError('An error occurred during analysis. Please try again.');
+                try {
+                    const result = await detectFace(imgRef.current, state.mode);
+
+                    if (!result.valid) {
+                        // Error State
+                        let tips: string[] = [];
+                        if (result.code === 'NO_FACE_DETECTED') tips = ["Ensure good lighting", "Face camera directly"];
+                        if (result.code === 'BAD_POSE') {
+                            tips = state.mode === 'front'
+                                ? ["This isn't a front-facing photo"]
+                                : ["This isn't a true side profile"];
+                        }
+
+                        setState(prev => ({
+                            status: 'error',
+                            mode: prev.mode,
+                            previewUrl: (prev as any).previewUrl,
+                            code: result.code || 'INTERNAL',
+                            tips
+                        }));
+                    } else {
+                        // Ready State
+                        setState(prev => ({
+                            status: 'ready',
+                            mode: prev.mode,
+                            previewUrl: (prev as any).previewUrl,
+                            warnings: result.warnings
+                        }));
+                    }
+                } catch (e) {
+                    console.error(e);
+                    setState(prev => ({
+                        status: 'error',
+                        mode: prev.mode,
+                        previewUrl: (prev as any).previewUrl,
+                        code: 'INTERNAL',
+                        tips: ["Detection engine failed."]
+                    }));
+                }
+            };
+
+            // Trigger detection when image is actually loaded in DOM
+            if (imgRef.current && imgRef.current.complete) {
+                startDetection();
+            } else if (imgRef.current) {
+                imgRef.current.onload = startDetection;
             }
-        } finally {
-            setLoading(false);
         }
+    }, [state.status, state.mode]);
+
+
+    // 4. Score (Ready -> Scoring -> Result)
+    const handleGetRatings = async () => {
+        if (state.status !== 'ready') return;
+        const currentUrl = state.previewUrl;
+        const currentWarnings = state.warnings;
+
+        setState({ status: 'scoring', mode: state.mode, previewUrl: currentUrl, warnings: currentWarnings });
+
+        // Simulate "Crunching numbers" feel + actual computation
+        setTimeout(async () => {
+            try {
+                if (!imgRef.current) throw new Error("No image ref");
+
+                const analysis = await scoreFace(imgRef.current);
+
+                setState({
+                    status: 'result',
+                    mode: state.mode,
+                    previewUrl: currentUrl,
+                    scores: analysis,
+                    warnings: analysis.warnings // could accumulate
+                });
+
+            } catch (error) {
+                setState({
+                    status: 'error',
+                    mode: state.mode,
+                    previewUrl: currentUrl,
+                    code: 'INTERNAL',
+                    tips: ["Scoring failed. Please retry."]
+                });
+            }
+        }, 1500); // 1.5s delay for UX "Scanning" effect
+    };
+
+    // 5. Clear / Reset
+    const handleClear = () => {
+        setMode(state.mode); // Reset to idle
     };
 
     return (
-        <main className="min-h-screen flex flex-col items-center justify-center p-4 md:p-24 text-white relative">
-            {/* Ambient Background Glow */}
+        <main className="min-h-screen bg-black text-white flex flex-col relative overflow-hidden selection:bg-cyan-500/30">
+            {/* Background Effects */}
             <div className="fixed inset-0 pointer-events-none">
-                <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-cyan-900/20 blur-[120px] rounded-full" />
-                <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-900/10 blur-[100px] rounded-full" />
+                <div className="absolute top-[10%] left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-cyan-900/10 blur-[100px] rounded-full" />
+                <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-blue-900/10 blur-[100px] rounded-full" />
             </div>
 
-            <div className="z-10 w-full max-w-6xl flex flex-col items-center text-center">
-                <h1 className="text-5xl md:text-8xl font-thin tracking-tighter mb-4 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-                    LOOKS<span className="text-cyan-400 font-light italic">MAXING</span>
-                </h1>
-                <p className="text-gray-400 text-lg md:text-xl max-w-2xl mb-8 font-light tracking-wide uppercase">
-                    Precision AI Aesthetics Engine
-                </p>
+            {/* Header */}
+            <header className="z-10 w-full p-8 flex justify-center">
+                <div className="text-center">
+                    <h1 className="text-4xl md:text-5xl font-thin tracking-tighter">
+                        LOOKS<span className="text-cyan-400 font-light italic">MAXING</span>
+                    </h1>
+                    <p className="text-gray-500 text-xs tracking-[0.4em] uppercase mt-2">Precision AI Engine</p>
+                </div>
+            </header>
+
+            {/* Content Actions */}
+            <div className="z-10 flex-1 flex flex-col items-center justify-center p-4 md:p-12 w-full max-w-7xl mx-auto">
 
                 {/* Tabs */}
-                <div className="flex p-1 bg-white/5 rounded-full mb-8 border border-white/10 backdrop-blur-md">
+                <div className="flex bg-white/5 p-1 rounded-full mb-12 border border-white/5 backdrop-blur-md">
                     <button
-                        onClick={() => setActiveTab('front')}
-                        className={`flex items-center gap-2 px-8 py-3 rounded-full text-xs font-bold tracking-widest transition-all ${activeTab === 'front' ? 'bg-cyan-400 text-black shadow-[0_0_20px_rgba(34,211,238,0.3)]' : 'text-gray-500 hover:text-white'}`}
+                        onClick={() => setMode('front')}
+                        className={`px-8 py-2 rounded-full text-xs font-bold tracking-widest transition-all ${state.mode === 'front' ? 'bg-cyan-400 text-black shadow-[0_0_20px_rgba(34,211,238,0.3)]' : 'text-gray-500 hover:text-white'
+                            }`}
                     >
-                        <User className="w-3 h-3" />
                         FRONT
                     </button>
                     <button
-                        onClick={() => setActiveTab('side')}
-                        className={`flex items-center gap-2 px-8 py-3 rounded-full text-xs font-bold tracking-widest transition-all ${activeTab === 'side' ? 'bg-cyan-400 text-black shadow-[0_0_20px_rgba(34,211,238,0.3)]' : 'text-gray-500 hover:text-white'}`}
+                        onClick={() => setMode('side')}
+                        className={`px-8 py-2 rounded-full text-xs font-bold tracking-widest transition-all ${state.mode === 'side' ? 'bg-cyan-400 text-black shadow-[0_0_20px_rgba(34,211,238,0.3)]' : 'text-gray-500 hover:text-white'
+                            }`}
                     >
-                        <UserPlus className="w-3 h-3" />
                         SIDE
                     </button>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start w-full">
-                    {/* Left Side: Upload / Preview */}
-                    <div className="flex flex-col items-center space-y-8">
-                        <div className="relative group w-full aspect-square max-w-sm rounded-[2rem] overflow-hidden border border-white/10 bg-white/5 hover:border-cyan-400/30 transition-all duration-500 flex items-center justify-center shadow-2xl">
-                            {currentImage ? (
-                                <div className="relative w-full h-full flex items-center justify-center bg-black/20">
-                                    {/* Wrapper that maintains image aspect ratio exactly */}
-                                    <div className="relative inline-block max-w-full max-h-full">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img
-                                            ref={imageRef}
-                                            src={currentImage}
-                                            alt="Preview"
-                                            className="max-w-full max-h-full block object-contain"
-                                            style={{ maxHeight: '100%', maxWidth: '100%' }}
-                                        />
-                                        <canvas
-                                            ref={canvasRef}
-                                            className="absolute inset-0 w-full h-full pointer-events-none opacity-80"
-                                        />
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="w-full h-full flex flex-col items-center justify-center gap-6">
-                                    <button
-                                        onClick={() => fileInputRef.current?.click()}
-                                        className="flex flex-col items-center group/btn"
-                                    >
-                                        <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-4 group-hover/btn:bg-cyan-400/10 transition-colors border border-white/10 group-hover/btn:border-cyan-400/50">
-                                            <Upload className="w-8 h-8 text-gray-400 group-hover/btn:text-cyan-400 transition-colors" />
-                                        </div>
-                                        <span className="text-xs text-gray-500 font-medium tracking-widest uppercase group-hover/btn:text-gray-300 transition-colors">Upload Photo</span>
-                                    </button>
-                                    <div className="flex items-center gap-3 opacity-30">
-                                        <div className="h-px w-12 bg-white"></div>
-                                        <span className="text-[10px] uppercase tracking-widest">OR</span>
-                                        <div className="h-px w-12 bg-white"></div>
-                                    </div>
-                                    <button
-                                        onClick={() => setShowCamera(true)}
-                                        className="flex items-center gap-2 text-gray-400 hover:text-cyan-400 transition-colors text-sm font-bold uppercase tracking-wider"
-                                    >
-                                        <Camera className="w-4 h-4" />
-                                        Open Camera
-                                    </button>
-                                </div>
-                            )}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 w-full items-start">
 
-                            <input
-                                type="file"
-                                ref={fileInputRef}
+                    {/* LEFT COLUMN: Upload & Preview */}
+                    <div className="flex flex-col items-center gap-8">
+
+                        <UploadCard
+                            mode={state.mode}
+                            previewUrl={(state as any).previewUrl}
+                            showCamera={showCamera}
+                            setShowCamera={setShowCamera}
+                            onUpload={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                    const url = URL.createObjectURL(file);
+                                    handleImageSelect(url);
+                                }
+                            }}
+                            onCameraCapture={(url) => handleImageSelect(url)}
+                            onClear={handleClear}
+                        />
+
+                        {/* Hidden Image for Processing */}
+                        {(state as any).previewUrl && (
+                            <img
+                                ref={imgRef}
+                                src={(state as any).previewUrl}
                                 className="hidden"
-                                accept="image/*"
-                                onChange={handleFileUpload}
+                                alt="analysis-source"
                             />
-                        </div>
+                        )}
 
-                        <div className="flex gap-4 w-full max-w-sm">
+                        {/* Action Buttons Block */}
+                        <div className="w-full max-w-sm">
                             <button
-                                onClick={() => {
-                                    setImage(null);
-                                    // Reset file input
-                                    if (fileInputRef.current) fileInputRef.current.value = '';
-                                }}
-                                disabled={!currentImage}
-                                className="flex-1 flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white py-4 rounded-2xl font-bold transition-all border border-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <Upload className="w-5 h-5" />
-                                CLEAR
-                            </button>
-
-                            <button
-                                onClick={processImage}
-                                disabled={!currentImage || loading}
-                                className={`flex-[2] py-4 rounded-2xl font-black tracking-widest transition-all shadow-lg shadow-cyan-400/20 ${!currentImage || loading
-                                    ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
-                                    : 'bg-cyan-400 text-black hover:scale-[1.02] active:scale-[0.98]'
+                                onClick={handleGetRatings}
+                                disabled={state.status !== 'ready'}
+                                className={`w-full py-4 rounded-2xl font-black tracking-widest transition-all shadow-lg ${state.status === 'ready'
+                                        ? 'bg-cyan-400 text-black hover:scale-[1.02] hover:shadow-cyan-400/20 cursor-pointer'
+                                        : 'bg-white/5 text-gray-600 cursor-not-allowed border border-white/5'
                                     }`}
                             >
-                                {loading ? (
-                                    <div className="flex items-center justify-center gap-2">
-                                        <Loader2 className="w-5 h-5 animate-spin" />
-                                        ANALYZING...
-                                    </div>
-                                ) : 'GET RATINGS'}
+                                {state.status === 'scoring' ? 'ANALYZING...' : 'GET RATINGS'}
                             </button>
+
+                            {/* Disabled Reason Hint */}
+                            {state.status !== 'ready' && state.status !== 'scoring' && state.status !== 'result' && state.status !== 'idle' && (
+                                <p className="text-center text-[10px] text-gray-500 uppercase tracking-wider mt-3">
+                                    {state.status === 'image_selected' || state.status === 'detecting'
+                                        ? "Wait for detection..."
+                                        : state.status === 'error'
+                                            ? "Fix errors to proceed"
+                                            : "Upload photo to unlock"}
+                                </p>
+                            )}
                         </div>
-
-                        {activeTab === 'side' && (
-                            <div className="text-xs text-gray-500 bg-white/5 px-4 py-2 rounded-lg border border-white/5">
-                                Note: Side profile analysis is experimental. Ensure clear lighting.
-                            </div>
-                        )}
-
-                        {error && (
-                            <div className="flex items-center gap-2 text-red-400 bg-red-400/10 px-4 py-2 rounded-lg border border-red-400/20">
-                                <AlertCircle className="w-4 h-4" />
-                                <span className="text-sm font-medium">{error}</span>
-                            </div>
-                        )}
                     </div>
 
-                    {/* Right Side: Results */}
-                    <div className="flex flex-col items-center lg:items-start justify-center min-h-[400px]">
-                        {currentResult ? (
-                            <div className="animate-in fade-in zoom-in-95 duration-700 w-full flex justify-center lg:justify-start">
-                                <ResultCard result={currentResult} />
-                            </div>
+                    {/* RIGHT COLUMN: Status & Results */}
+                    <div className="flex flex-col items-center lg:items-start w-full min-h-[400px]">
+
+                        {state.status === 'result' ? (
+                            <ResultCard
+                                scores={state.scores}
+                                warnings={state.warnings}
+                                onClear={handleClear}
+                                onRescan={handleGetRatings}
+                                onShare={() => {
+                                    navigator.clipboard.writeText(JSON.stringify(state.scores, null, 2));
+                                    alert("Results copied to clipboard!");
+                                }}
+                            />
                         ) : (
-                            <div className="text-center lg:text-left space-y-4 opacity-40">
-                                <div className="w-16 h-1 bg-cyan-400 rounded-full mx-auto lg:mx-0"></div>
-                                <h3 className="text-2xl font-thin tracking-wide">
-                                    {activeTab === 'front' ? 'WAITING FOR FRONT SCAN' : 'WAITING FOR SIDE SCAN'}
-                                </h3>
-                                <p className="text-gray-400 max-w-xs text-sm uppercase tracking-widest">
-                                    {activeTab === 'front'
-                                        ? 'Upload a front-facing photo with good lighting'
-                                        : 'Upload a side profile photo for jawline analysis'}
-                                </p>
-                            </div>
+                            <StatusPanel state={state} />
                         )}
+
                     </div>
                 </div>
             </div>
 
-            {/* Camera Modal */}
-            {showCamera && (
-                <CameraCapture
-                    onCapture={handleCameraCapture}
-                    onClose={() => setShowCamera(false)}
-                />
-            )}
-
-            {/* Footer / Credits */}
-            <footer className="mt-24 text-gray-600 text-xs">
-                &copy; 2026 FACERATINGS AI. ALL RIGHTS RESERVED.
+            <footer className="w-full p-6 text-center text-[10px] text-gray-700 uppercase tracking-widest">
+                &copy; 2026 FaceRatings AI • Client-Side Secure Processing
             </footer>
         </main>
     );

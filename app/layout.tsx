@@ -1,22 +1,19 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
-
-export const metadata: Metadata = {
-    title: "Face Ratings MVP",
-    description: "Advanced face landmarks scoring (looksmaxing style)",
-};
+export const metadata = {
+    title: 'LooksMaxing AI',
+    description: 'Precision Face Ratings MVP',
+}
 
 export default function RootLayout({
     children,
-}: Readonly<{
-    children: React.ReactNode;
-}>) {
+}: {
+    children: React.ReactNode
+}) {
     return (
         <html lang="en">
-            <body className={inter.className}>{children}</body>
+            <body className="bg-black text-white antialiased selection:bg-cyan-900 selection:text-white">
+                {children}
+            </body>
         </html>
-    );
+    )
 }
