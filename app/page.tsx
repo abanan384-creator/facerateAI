@@ -7,6 +7,7 @@ import { detectFace, scoreFace } from '@/lib/analyzeFace';
 import { UploadCard } from '@/components/UploadCard';
 import { StatusPanel } from '@/components/StatusPanel';
 import { ResultCard } from '@/components/ResultCard';
+import { InsightsCard } from '@/components/InsightsCard';
 
 // ----- Initial State -----
 const INITIAL_STATE = (mode: Mode = 'front'): ScanState => ({
@@ -224,8 +225,8 @@ export default function Home() {
                                 onClick={handleGetRatings}
                                 disabled={state.status !== 'ready'}
                                 className={`w-full py-4 rounded-2xl font-black tracking-widest transition-all shadow-lg ${state.status === 'ready'
-                                        ? 'bg-cyan-400 text-black hover:scale-[1.02] hover:shadow-cyan-400/20 cursor-pointer'
-                                        : 'bg-white/5 text-gray-600 cursor-not-allowed border border-white/5'
+                                    ? 'bg-cyan-400 text-black hover:scale-[1.02] hover:shadow-cyan-400/20 cursor-pointer'
+                                    : 'bg-white/5 text-gray-600 cursor-not-allowed border border-white/5'
                                     }`}
                             >
                                 {state.status === 'scoring' ? 'ANALYZING...' : 'GET RATINGS'}
@@ -245,19 +246,22 @@ export default function Home() {
                     </div>
 
                     {/* RIGHT COLUMN: Status & Results */}
-                    <div className="flex flex-col items-center lg:items-start w-full min-h-[400px]">
+                    <div className="flex flex-col items-center lg:items-start w-full min-h-[400px] gap-6">
 
                         {state.status === 'result' ? (
-                            <ResultCard
-                                scores={state.scores}
-                                warnings={state.warnings}
-                                onClear={handleClear}
-                                onRescan={handleGetRatings}
-                                onShare={() => {
-                                    navigator.clipboard.writeText(JSON.stringify(state.scores, null, 2));
-                                    alert("Results copied to clipboard!");
-                                }}
-                            />
+                            <>
+                                <ResultCard
+                                    scores={state.scores}
+                                    warnings={state.warnings}
+                                    onClear={handleClear}
+                                    onRescan={handleGetRatings}
+                                    onShare={() => {
+                                        navigator.clipboard.writeText(JSON.stringify(state.scores, null, 2));
+                                        alert("Results copied to clipboard!");
+                                    }}
+                                />
+                                <InsightsCard scores={state.scores} />
+                            </>
                         ) : (
                             <StatusPanel state={state} />
                         )}
