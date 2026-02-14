@@ -1,7 +1,7 @@
 
 import * as faceLandmarksDetection from '@tensorflow-models/face-landmarks-detection';
 import '@tensorflow/tfjs-backend-webgl';
-import { getQualityMetrics } from './quality';
+import { getQualityMetrics, analyzeSkin } from './quality';
 import { Mode, Warning, ErrCode, AnalysisScores } from './state';
 
 let detector: faceLandmarksDetection.FaceLandmarksDetector | null = null;
@@ -123,38 +123,36 @@ export async function scoreFace(img: HTMLImageElement): Promise<FullAnalysisResu
     const face_width = dist(getKeypoint(INDICES.face_left), getKeypoint(INDICES.face_right));
     const face_height = dist(getKeypoint(INDICES.forehead_top), getKeypoint(INDICES.chin_bottom));
 
-    // facial thirds calculation
-    // 1. Upper: Hairline (10) to Nasion (168)
-    // 2. Middle: Nasion (168) to Subnasale (2)
-    // 3. Lower: Subnasale (2) to Menton (152)
+    // Facial Thirds Analysis
+    // Ideal face is divided into 3 equal vertical sections:
+    // 1. Upper third: Hairline (forehead top) to Glabella (between eyebrows)
+    // 2. Middle third: Glabella to Subnasale (under nose)
+    // 3. Lower third: Subnasale to Menton (chin bottom)
 
-    // Note: 10 is forehead top. If detecting "hairline" is hard, we approximate with forehead top.
-    const p_hairline = getKeypoint(INDICES.forehead_top);
-    const p_nasion = getKeypoint(INDICES.nasion);
-    const p_subnasale = getKeypoint(INDICES.subnasale);
-    const p_menton = getKeypoint(INDICES.chin_bottom);
+    const p_hairline = getKeypoint(INDICES.forehead_top);  // Top of forehead (10)
+    const p_glabella = getKeypoint(INDICES.nasion);         // Between eyes (168)
+    const p_subnasale = getKeypoint(INDICES.subnasale);     // Under nose (2)
+    const p_menton = getKeypoint(INDICES.chin_bottom);      // Chin (152)
 
-    const third_1 = dist(p_hairline, p_nasion);
-    const third_2 = dist(p_nasion, p_subnasale);
-    const third_3 = dist(p_subnasale, p_menton);
+    // Calculate distances for each third
+    const upper_third = dist(p_hairline, p_glabella);
+    const middle_third = dist(p_glabella, p_subnasale);
+    const lower_third = dist(p_subnasale, p_menton);
 
-    const thirds_mean = (third_1 + third_2 + third_3) / 3;
+    const total_height = upper_third + middle_third + lower_third;
+    const ideal_third = total_height / 3;
 
-    // Calculate deviation score (lower deviation = higher score)
-    // If one third is 0 (impossible but safe), handle it.
-    const deviation = (
-        Math.abs(third_1 - thirds_mean) +
-        Math.abs(third_2 - thirds_mean) +
-        Math.abs(third_3 - thirds_mean)
-    );
+    // Calculate deviation from ideal for each section
+    const upper_deviation = Math.abs(upper_third - ideal_third) / ideal_third;
+    const middle_deviation = Math.abs(middle_third - ideal_third) / ideal_third;
+    const lower_deviation = Math.abs(lower_third - ideal_third) / ideal_third;
 
-    // Normalize score: 0 deviation => 100. 
-    // Max deviation approx typically 30-40% of face height? 
-    // Let's say if deviation is > 1/3 of mean, score drops significantly.
-    // Heuristic: Score = 100 - (deviation / total_height) * 300? 
-    // deviation / thirds_mean is relative error.
+    // Average deviation
+    const avg_deviation = (upper_deviation + middle_deviation + lower_deviation) / 3;
 
-    const thirds_score = Math.max(0, 100 - (deviation / thirds_mean) * 50); // *50 makes it sensitive but not punishing.
+    // Convert to score (0% deviation = 100 points, 20% deviation = 0 points)
+    // Formula: score = 100 - (deviation_percent * 500)
+    const thirds_score = Math.max(0, 100 - (avg_deviation * 500));
 
 
     const jaw_width = dist(getKeypoint(INDICES.jaw_left), getKeypoint(INDICES.jaw_right));
@@ -181,14 +179,14 @@ export async function scoreFace(img: HTMLImageElement): Promise<FullAnalysisResu
     const cheekbones = Math.round(norm(cheek_ratio, 0.95, 1.25));
 
     // 3. Skin Quality logic
-    const sharp = norm(q.sharpness, 50, 250);
-    const contr = norm(q.contrast, 20, 70);
-    const brightCenter = norm(q.brightness, 80, 170);
-    const brightScore = 100 - Math.abs(brightCenter - 50) * 2;
+    // We use local texture variance (smoothness) on cheeks/forehead
+    const rawSkinScore = analyzeSkin(img, keypoints);
 
-    const skin_quality = Math.round(
-        0.5 * sharp + 0.3 * contr + 0.2 * clamp(brightScore, 0, 100)
-    );
+    // Penalty for bad lighting/blur (if image is too blurry, smooth skin score is unreliable)
+    // If sharpness is very low, we can't be sure it's good skin, so we dampen the score.
+    const blurPenalty = q.sharpness < 100 ? (100 - q.sharpness) * 0.2 : 0;
+
+    const skin_quality = Math.round(clamp(rawSkinScore - blurPenalty, 0, 100));
 
     // 4. Masculinity
     const masculinity = Math.round(
