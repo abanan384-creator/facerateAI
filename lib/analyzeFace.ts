@@ -1,7 +1,7 @@
 
 import * as faceLandmarksDetection from '@tensorflow-models/face-landmarks-detection';
 import '@tensorflow/tfjs-backend-webgl';
-import { getQualityMetrics, analyzeSkin } from './quality';
+import { getQualityMetrics } from './quality';
 import { Mode, Warning, ErrCode, AnalysisScores } from './state';
 
 let detector: faceLandmarksDetection.FaceLandmarksDetector | null = null;
@@ -178,15 +178,7 @@ export async function scoreFace(img: HTMLImageElement): Promise<FullAnalysisResu
     // 2. Cheekbones
     const cheekbones = Math.round(norm(cheek_ratio, 0.95, 1.25));
 
-    // 3. Skin Quality logic
-    // We use local texture variance (smoothness) on cheeks/forehead
-    const rawSkinScore = analyzeSkin(img, keypoints);
 
-    // Penalty for bad lighting/blur (if image is too blurry, smooth skin score is unreliable)
-    // If sharpness is very low, we can't be sure it's good skin, so we dampen the score.
-    const blurPenalty = q.sharpness < 100 ? (100 - q.sharpness) * 0.2 : 0;
-
-    const skin_quality = Math.round(clamp(rawSkinScore - blurPenalty, 0, 100));
 
     // 4. Masculinity
     const masculinity = Math.round(
@@ -196,7 +188,7 @@ export async function scoreFace(img: HTMLImageElement): Promise<FullAnalysisResu
 
     // 5. Overall
     const overall = Math.round(
-        0.25 * jawline + 0.20 * cheekbones + 0.15 * skin_quality + 0.20 * masculinity + 0.20 * clamp(thirds_score, 0, 100)
+        0.30 * jawline + 0.25 * cheekbones + 0.25 * masculinity + 0.20 * clamp(thirds_score, 0, 100)
     );
 
     // 6. Potential & Warnings
@@ -232,7 +224,6 @@ export async function scoreFace(img: HTMLImageElement): Promise<FullAnalysisResu
     return {
         jawline,
         cheekbones,
-        skin_quality,
         masculinity,
         facial_thirds: Math.round(clamp(thirds_score, 0, 100)),
         overall,

@@ -41,22 +41,7 @@ export const RECOMMENDATIONS: Record<string, Recommendation> = {
         timeframe: '2-8 месяцев'
     },
 
-    skin_quality: {
-        title: "Улучшение качества кожи",
-        problem: "Проблемы с кожей: текстура, покраснения, поры, акне или неровный тон",
-        solutions: [
-            "🔹 **Базовый уход** - Очищение → Тоник → Увлажнение (утро/вечер)",
-            "🔹 **Третиноин (Ретин-А)** - Золотой стандарт для текстуры кожи и anti-age (требует рецепт)",
-            "🔹 **Ниацинамид** - Сужение пор и выравнивание тона (The Ordinary 10%)",
-            "🔹 **Витамин C** - Осветление пигментации и антиоксидантная защита",
-            "🔹 **SPF 50+** - ОБЯЗАТЕЛЬНО каждый день для защиты от старения",
-            "🔹 **Гидратация** - Минимум 2л воды в день",
-            "🔹 **Сон** - 7-9 часов для регенерации кожи",
-            "🔹 **Диета** - Исключите молочные продукты, сахар и обработанную пищу"
-        ],
-        difficulty: 'easy',
-        timeframe: '1-6 месяцев'
-    },
+
 
     masculinity: {
         title: "Повышение маскулинности",
@@ -118,7 +103,6 @@ export interface MetricInsight {
 export function analyzeScores(scores: {
     jawline: number;
     cheekbones: number;
-    skin_quality: number;
     masculinity: number;
     facial_thirds: number;
     potential: number;
@@ -141,13 +125,7 @@ export function analyzeScores(scores: {
             status: getStatus(scores.cheekbones),
             emoji: '💎'
         },
-        {
-            metric: 'skin_quality',
-            label: 'Skin Quality',
-            value: scores.skin_quality,
-            status: getStatus(scores.skin_quality),
-            emoji: '✨'
-        },
+
         {
             metric: 'masculinity',
             label: 'Masculinity',
@@ -166,7 +144,7 @@ export function analyzeScores(scores: {
 
     // Add potential if it's significantly different from overall
     if (scores.potential > scores.jawline + 10 ||
-        scores.potential > scores.skin_quality + 10) {
+        scores.potential > scores.masculinity + 10) {
         metrics.push({
             metric: 'potential',
             label: 'Photo Quality',
@@ -179,9 +157,9 @@ export function analyzeScores(scores: {
     // Sort by value
     const sorted = [...metrics].sort((a, b) => b.value - a.value);
 
-    // Top 2-3 are strengths, bottom 2-3 are improvements
-    const strengths = sorted.filter(m => m.status === 'excellent' || m.status === 'good').slice(0, 3);
-    const improvements = sorted.filter(m => m.status === 'needs_improvement' || m.status === 'average').slice(-3);
+    // Top metrics are strengths, bottom metrics are improvements
+    const strengths = sorted.filter(m => m.status === 'excellent' || m.status === 'good');
+    const improvements = sorted.filter(m => m.status === 'needs_improvement' || m.status === 'average');
 
     return { strengths, improvements };
 }

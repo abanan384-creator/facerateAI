@@ -54,7 +54,6 @@ export const ResultCard = ({ scores, warnings, onClear, onRescan, onShare }: Res
                 <Metric label="Jawline" value={scores.jawline} />
                 <Metric label="Cheekbones" value={scores.cheekbones} />
                 <Metric label="Facial Thirds" value={scores.facial_thirds} />
-                <Metric label="Skin Quality" value={scores.skin_quality} />
             </div>
 
             {/* Warnings */}

@@ -6,7 +6,6 @@ export type ErrCode = 'NO_IMAGE' | 'NO_FACE_DETECTED' | 'BAD_POSE' | 'IMAGE_TOO_
 export interface AnalysisScores {
     jawline: number;
     cheekbones: number;
-    skin_quality: number;
     masculinity: number;
     facial_thirds: number;
     overall: number;

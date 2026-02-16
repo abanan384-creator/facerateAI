@@ -7,7 +7,7 @@ import { detectFace, scoreFace } from '@/lib/analyzeFace';
 import { UploadCard } from '@/components/UploadCard';
 import { StatusPanel } from '@/components/StatusPanel';
 import { ResultCard } from '@/components/ResultCard';
-import { InsightsCard } from '@/components/InsightsCard';
+import { AnalysisGrid } from '@/components/AnalysisGrid';
 
 // ----- Initial State -----
 const INITIAL_STATE = (mode: Mode = 'front'): ScanState => ({
@@ -42,7 +42,11 @@ export default function Home() {
         if (state.status === 'image_selected') {
             const startDetection = async () => {
                 // Transition to Detecting
-                setState(prev => ({ ...prev, status: 'detecting' }));
+                setState(prev => ({
+                    status: 'detecting',
+                    mode: prev.mode,
+                    previewUrl: (prev as any).previewUrl
+                }));
 
                 // Small delay to allow UI to render 'Detecting...'
                 await new Promise(r => setTimeout(r, 600));
@@ -188,7 +192,7 @@ export default function Home() {
                     </button>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 w-full items-start">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 w-full items-start mb-16">
 
                     {/* LEFT COLUMN: Upload & Preview */}
                     <div className="flex flex-col items-center gap-8">
@@ -245,29 +249,37 @@ export default function Home() {
                         </div>
                     </div>
 
-                    {/* RIGHT COLUMN: Status & Results */}
+                    {/* RIGHT COLUMN: Status & Result Card */}
                     <div className="flex flex-col items-center lg:items-start w-full min-h-[400px] gap-6">
 
                         {state.status === 'result' ? (
-                            <>
-                                <ResultCard
-                                    scores={state.scores}
-                                    warnings={state.warnings}
-                                    onClear={handleClear}
-                                    onRescan={handleGetRatings}
-                                    onShare={() => {
-                                        navigator.clipboard.writeText(JSON.stringify(state.scores, null, 2));
-                                        alert("Results copied to clipboard!");
-                                    }}
-                                />
-                                <InsightsCard scores={state.scores} />
-                            </>
+                            <ResultCard
+                                scores={state.scores}
+                                warnings={state.warnings}
+                                onClear={handleClear}
+                                onRescan={handleGetRatings}
+                                onShare={() => {
+                                    navigator.clipboard.writeText(JSON.stringify(state.scores, null, 2));
+                                    alert("Results copied to clipboard!");
+                                }}
+                            />
                         ) : (
                             <StatusPanel state={state} />
                         )}
 
                     </div>
                 </div>
+
+                {/* DETAILED ANALYSIS SECTION (Full Width) */}
+                {state.status === 'result' && (
+                    <div className="w-full max-w-4xl mx-auto border-t border-white/5 pt-16 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+                        <div className="text-center mb-12">
+                            <h2 className="text-2xl md:text-3xl font-thin tracking-[0.2em] uppercase text-white mb-2">Detailed Report</h2>
+                            <div className="h-px w-24 bg-cyan-500/50 mx-auto" />
+                        </div>
+                        <AnalysisGrid scores={state.scores} />
+                    </div>
+                )}
             </div>
 
             <footer className="w-full p-6 text-center text-[10px] text-gray-700 uppercase tracking-widest">
