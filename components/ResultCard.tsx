@@ -10,45 +10,44 @@ interface ResultCardProps {
     onShare: () => void;
 }
 
-const ProgressBar = ({ value, color = 'bg-white/80' }: { value: number; color?: string }) => (
-    <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden mt-1.5 backdrop-blur-sm border border-white/5">
+const ProgressBar = ({ value }: { value: number }) => (
+    <div className="h-1.5 w-full bg-text/5 rounded-sm overflow-hidden mt-1.5">
         <div
-            className={`h-full ${color} transition-all duration-1000 ease-out shadow-[0_0_10px_currentColor]`}
+            className="h-full bg-primary transition-all duration-700 ease-out"
             style={{ width: `${value}%` }}
         />
     </div>
 );
 
 const Metric = ({ label, value, highlight }: { label: string; value: number; highlight?: boolean }) => (
-    <div className="flex flex-col mb-4 last:mb-0 group">
+    <div className="flex flex-col mb-5 last:mb-0">
         <div className="flex justify-between items-end pb-1">
-            <span className={`text-[10px] uppercase tracking-[0.2em] font-medium transition-colors ${highlight ? 'text-cyan-300' : 'text-gray-400 group-hover:text-gray-300'}`}>
+            <span className={`text-[10px] uppercase tracking-[0.2em] font-semibold ${highlight ? 'text-primary' : 'text-text/40'}`}>
                 {label}
             </span>
-            <div className={`text-xl font-light tracking-wide ${highlight ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]' : 'text-white'}`}>
+            <div className={`text-lg font-semibold tracking-tight ${highlight ? 'text-primary' : 'text-text'}`}>
                 {value}
             </div>
         </div>
-        <ProgressBar value={value} color={highlight ? "bg-cyan-400" : "bg-white/80"} />
+        <ProgressBar value={value} />
     </div>
 );
 
 export const ResultCard = ({ scores, warnings, onClear, onRescan, onShare }: ResultCardProps) => {
     return (
-        <div className="w-full max-w-sm bg-black/40 backdrop-blur-2xl border border-white/10 rounded-[2rem] p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-500">
+        <div className="w-full max-w-sm bg-surface border border-text/10 rounded-lg p-8">
             {/* Header Score */}
-            <div className="text-center mb-8 relative">
-                <div className="absolute inset-0 bg-cyan-400/5 blur-3xl rounded-full" />
-                <h2 className="text-7xl font-thin tracking-tighter text-white mb-2 relative z-10">
+            <div className="text-center mb-10">
+                <h2 className="text-6xl font-bold tracking-tight text-primary mb-2">
                     {(scores.overall / 10).toFixed(1)}
                 </h2>
-                <div className="inline-block px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20">
-                    <p className="text-cyan-400 text-[10px] font-bold tracking-[0.3em] uppercase">Overall Score</p>
+                <div className="inline-block px-3 py-1 border border-primary/20 rounded-sm">
+                    <p className="text-primary text-[10px] font-bold tracking-[0.3em] uppercase">Overall Score</p>
                 </div>
             </div>
 
-            {/* Metrics Grid */}
-            <div className="space-y-5">
+            {/* Metrics */}
+            <div className="space-y-1">
                 <Metric label="Potential" value={scores.potential} highlight />
                 <Metric label="Masculinity" value={scores.masculinity} />
                 <Metric label="Jawline" value={scores.jawline} />
@@ -58,14 +57,14 @@ export const ResultCard = ({ scores, warnings, onClear, onRescan, onShare }: Res
 
             {/* Warnings */}
             {warnings.length > 0 && (
-                <div className="mt-8 p-4 bg-yellow-500/5 border border-yellow-500/10 rounded-xl backdrop-blur-sm">
-                    <p className="text-[9px] text-yellow-500/80 font-bold mb-3 tracking-widest uppercase flex items-center gap-2">
-                        <span className="w-1 h-1 bg-yellow-500 rounded-full" />
+                <div className="mt-8 p-4 bg-bg border border-text/10 rounded-md">
+                    <p className="text-[9px] text-text/40 font-bold mb-3 tracking-widest uppercase flex items-center gap-2">
+                        <span className="w-1 h-1 bg-text/30 rounded-full" />
                         Quality Notes
                     </p>
                     <div className="flex flex-wrap gap-2">
                         {warnings.map(w => (
-                            <span key={w} className="text-[9px] bg-yellow-500/10 text-yellow-200/80 px-2 py-1 rounded border border-yellow-500/20 uppercase tracking-wider">
+                            <span key={w} className="text-[9px] bg-text/5 text-text/50 px-2 py-1 rounded-sm border border-text/10 uppercase tracking-wider font-medium">
                                 {w.replace('_', ' ')}
                             </span>
                         ))}
@@ -74,22 +73,22 @@ export const ResultCard = ({ scores, warnings, onClear, onRescan, onShare }: Res
             )}
 
             {/* Actions */}
-            <div className="grid grid-cols-2 gap-3 mt-8 pt-6 border-t border-white/10">
+            <div className="grid grid-cols-2 gap-3 mt-8 pt-6 border-t border-text/10">
                 <button
                     onClick={onRescan}
-                    className="col-span-2 py-3 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl text-xs font-bold uppercase tracking-widest transition-all hover:scale-[1.02]"
+                    className="col-span-2 py-3 bg-primary text-bg border border-primary rounded-md text-xs font-bold uppercase tracking-widest transition-opacity duration-150 hover:opacity-90"
                 >
                     Rescan
                 </button>
                 <button
                     onClick={onClear}
-                    className="py-3 text-gray-500 hover:text-white text-xs font-bold uppercase tracking-widest transition-colors"
+                    className="py-3 text-text/30 hover:text-text text-xs font-semibold uppercase tracking-widest transition-opacity duration-150"
                 >
                     Clear
                 </button>
                 <button
                     onClick={onShare}
-                    className="py-3 text-cyan-400/80 hover:text-cyan-400 text-xs font-bold uppercase tracking-widest transition-colors"
+                    className="py-3 text-primary/60 hover:text-primary text-xs font-semibold uppercase tracking-widest transition-opacity duration-150"
                 >
                     Share Result
                 </button>

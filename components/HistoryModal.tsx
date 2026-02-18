@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { HistoryItem, getHistory, deleteScan, clearHistory } from '@/lib/history';
-import { Trash2, X, Calendar, User, UserPlus } from 'lucide-react';
+import { Trash2, X } from 'lucide-react';
 
 interface HistoryModalProps {
     onClose: () => void;
@@ -51,42 +51,43 @@ export const HistoryModal = ({ onClose, onSelectScan }: HistoryModalProps) => {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-            <div className="bg-[#0a0a0a] border border-white/10 w-full max-w-4xl max-h-[80vh] rounded-3xl flex flex-col shadow-2xl relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-text/60">
+            <div className="bg-bg border border-text/10 w-full max-w-4xl max-h-[80vh] rounded-lg flex flex-col">
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-white/10">
-                    <h2 className="text-2xl font-thin tracking-wide text-white uppercase flex items-center gap-3">
-                        <Calendar className="w-5 h-5 text-cyan-400" />
+                <div className="flex items-center justify-between p-6 border-b border-text/10">
+                    <h2 className="text-xl font-semibold tracking-tight text-primary">
                         Scan History
                     </h2>
                     <div className="flex items-center gap-4">
                         {history.length > 0 && (
                             <button
                                 onClick={handleClearAll}
-                                className="text-xs text-red-400 hover:text-red-300 uppercase tracking-widest font-bold px-3 py-1 rounded border border-red-500/20 hover:bg-red-500/10 transition-colors"
+                                className="text-xs text-text/40 hover:text-text uppercase tracking-widest font-bold px-3 py-1 rounded-md border border-text/10 hover:border-text/20 transition-opacity duration-150"
                             >
                                 Clear All
                             </button>
                         )}
                         <button
                             onClick={onClose}
-                            className="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white"
+                            className="p-2 hover:bg-text/5 rounded-md transition-opacity duration-150 text-text/30 hover:text-text"
                         >
-                            <X className="w-6 h-6" />
+                            <X className="w-5 h-5" />
                         </button>
                     </div>
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+                <div className="flex-1 overflow-y-auto p-6">
                     {loading ? (
-                        <div className="h-full flex items-center justify-center text-gray-500">
+                        <div className="h-full flex items-center justify-center text-text/30 font-medium">
                             Loading history...
                         </div>
                     ) : history.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center text-gray-500 gap-4 opacity-50">
-                            <Calendar className="w-16 h-16 stroke-1" />
-                            <p className="uppercase tracking-widest text-sm">No saved scans</p>
+                        <div className="h-full flex flex-col items-center justify-center text-text/20 gap-4 py-16">
+                            <div className="w-12 h-12 rounded-md border border-text/10 flex items-center justify-center">
+                                <span className="text-lg text-text/15">—</span>
+                            </div>
+                            <p className="uppercase tracking-widest text-xs font-medium">No saved scans</p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -94,40 +95,33 @@ export const HistoryModal = ({ onClose, onSelectScan }: HistoryModalProps) => {
                                 <div
                                     key={item.id}
                                     onClick={() => onSelectScan(item)}
-                                    className="group relative bg-white/5 border border-white/5 hover:border-cyan-400/50 rounded-xl overflow-hidden cursor-pointer transition-all hover:shadow-[0_0_20px_rgba(34,211,238,0.1)] hover:-translate-y-1"
+                                    className="group relative bg-surface border border-text/10 hover:border-primary/30 rounded-md overflow-hidden cursor-pointer transition-opacity duration-150"
                                 >
                                     {/* Image Thumbnail */}
-                                    <div className="aspect-square relative overflow-hidden bg-black/50">
+                                    <div className="aspect-square relative overflow-hidden bg-text/5">
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img
                                             src={item.image}
                                             alt="Scan"
-                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                            className="w-full h-full object-cover"
                                         />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-80" />
 
-                                        {/* Overlay Stats */}
-                                        <div className="absolute bottom-0 left-0 right-0 p-4">
+                                        {/* Overlay Info */}
+                                        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-text/80 to-transparent">
                                             <div className="flex justify-between items-end">
                                                 <div>
-                                                    <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">
+                                                    <p className="text-[10px] text-bg/50 uppercase tracking-wider mb-1 font-medium">
                                                         {formatDate(item.date)}
                                                     </p>
-                                                    <div className="flex items-center gap-2">
-                                                        {item.type === 'front' ?
-                                                            <User className="w-3 h-3 text-cyan-400" /> :
-                                                            <UserPlus className="w-3 h-3 text-purple-400" />
-                                                        }
-                                                        <span className="text-xs font-bold text-white uppercase">
-                                                            {item.type}
-                                                        </span>
-                                                    </div>
+                                                    <span className="text-xs font-bold text-bg uppercase">
+                                                        {item.type}
+                                                    </span>
                                                 </div>
                                                 <div className="text-right">
-                                                    <div className="text-2xl font-light text-white tracking-tight">
+                                                    <div className="text-2xl font-bold text-bg tracking-tight">
                                                         {(item.result.overall / 10).toFixed(1)}
                                                     </div>
-                                                    <div className="text-[9px] text-cyan-400 uppercase tracking-widest">
+                                                    <div className="text-[9px] text-bg/50 uppercase tracking-widest font-medium">
                                                         Score
                                                     </div>
                                                 </div>
@@ -135,13 +129,13 @@ export const HistoryModal = ({ onClose, onSelectScan }: HistoryModalProps) => {
                                         </div>
                                     </div>
 
-                                    {/* Action Buttons */}
+                                    {/* Delete */}
                                     <button
                                         onClick={(e) => handleDelete(e, item.id)}
-                                        className="absolute top-2 right-2 p-2 bg-black/50 hover:bg-red-500/80 text-white/70 hover:text-white rounded-full backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0"
+                                        className="absolute top-2 right-2 p-2 bg-bg/80 text-text/40 hover:text-text rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-150"
                                         title="Delete Scan"
                                     >
-                                        <Trash2 className="w-4 h-4" />
+                                        <Trash2 className="w-3.5 h-3.5" />
                                     </button>
                                 </div>
                             ))}

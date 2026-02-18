@@ -9,22 +9,28 @@ const config: Config = {
     ],
     theme: {
         extend: {
-            backgroundImage: {
-                'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-                'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
-            },
-            animation: {
-                'in': 'fade-in 0.5s ease-out',
-                'out': 'fade-out 0.5s ease-in',
-            },
             colors: {
-                cyan: {
-                    400: '#22d3ee', // Key brand color
-                    900: '#164e63',
-                }
-            }
+                bg: '#EEE8DF',
+                primary: '#1A2D42',
+                text: '#161616',
+                surface: '#f5f1ea',
+            },
+            fontFamily: {
+                base: ['Inter', 'system-ui', 'sans-serif'],
+            },
+            borderRadius: {
+                sm: '4px',
+                md: '6px',
+                lg: '8px',
+            },
+            transitionDuration: {
+                '150': '150ms',
+            },
+            transitionTimingFunction: {
+                ease: 'ease',
+            },
         },
     },
-    plugins: [require("tailwindcss-animate")],
+    plugins: [],
 }
 export default config

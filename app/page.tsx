@@ -17,38 +17,31 @@ const INITIAL_STATE = (mode: Mode = 'front'): ScanState => ({
 
 // ----- Main Page -----
 export default function Home() {
-    // We lift state up here, strictly following the union types
     const [state, setState] = useState<ScanState>(INITIAL_STATE('front'));
     const [showCamera, setShowCamera] = useState(false);
-
-    // Persist refs for raw elements
     const imgRef = useRef<HTMLImageElement>(null);
 
     // --- State Transitions ---
 
-    // 1. Switch Mode (Idle -> Idle)
     const setMode = (mode: Mode) => {
         setState(INITIAL_STATE(mode));
         setShowCamera(false);
     };
 
-    // 2. Image Selected (Idle -> ImageSelected -> auto Detect)
     const handleImageSelect = useCallback((url: string) => {
         setState(prev => ({ status: 'image_selected', mode: prev.mode, previewUrl: url }));
     }, []);
 
-    // 3. Auto-Detect Effect
+    // Auto-Detect Effect
     useEffect(() => {
         if (state.status === 'image_selected') {
             const startDetection = async () => {
-                // Transition to Detecting
                 setState(prev => ({
                     status: 'detecting',
                     mode: prev.mode,
                     previewUrl: (prev as any).previewUrl
                 }));
 
-                // Small delay to allow UI to render 'Detecting...'
                 await new Promise(r => setTimeout(r, 600));
 
                 if (!imgRef.current) {
@@ -66,7 +59,6 @@ export default function Home() {
                     const result = await detectFace(imgRef.current, state.mode);
 
                     if (!result.valid) {
-                        // Error State
                         let tips: string[] = [];
                         if (result.code === 'NO_FACE_DETECTED') tips = ["Ensure good lighting", "Face camera directly"];
                         if (result.code === 'BAD_POSE') {
@@ -83,7 +75,6 @@ export default function Home() {
                             tips
                         }));
                     } else {
-                        // Ready State
                         setState(prev => ({
                             status: 'ready',
                             mode: prev.mode,
@@ -103,7 +94,6 @@ export default function Home() {
                 }
             };
 
-            // Trigger detection when image is actually loaded in DOM
             if (imgRef.current && imgRef.current.complete) {
                 startDetection();
             } else if (imgRef.current) {
@@ -112,8 +102,7 @@ export default function Home() {
         }
     }, [state.status, state.mode]);
 
-
-    // 4. Score (Ready -> Scoring -> Result)
+    // Score
     const handleGetRatings = async () => {
         if (state.status !== 'ready') return;
         const currentUrl = state.previewUrl;
@@ -121,21 +110,17 @@ export default function Home() {
 
         setState({ status: 'scoring', mode: state.mode, previewUrl: currentUrl, warnings: currentWarnings });
 
-        // Simulate "Crunching numbers" feel + actual computation
         setTimeout(async () => {
             try {
                 if (!imgRef.current) throw new Error("No image ref");
-
                 const analysis = await scoreFace(imgRef.current);
-
                 setState({
                     status: 'result',
                     mode: state.mode,
                     previewUrl: currentUrl,
                     scores: analysis,
-                    warnings: analysis.warnings // could accumulate
+                    warnings: analysis.warnings
                 });
-
             } catch (error) {
                 setState({
                     status: 'error',
@@ -145,54 +130,53 @@ export default function Home() {
                     tips: ["Scoring failed. Please retry."]
                 });
             }
-        }, 1500); // 1.5s delay for UX "Scanning" effect
+        }, 1500);
     };
 
-    // 5. Clear / Reset
     const handleClear = () => {
-        setMode(state.mode); // Reset to idle
+        setMode(state.mode);
     };
 
     return (
-        <main className="min-h-screen bg-black text-white flex flex-col relative overflow-hidden selection:bg-cyan-500/30">
-            {/* Background Effects */}
-            <div className="fixed inset-0 pointer-events-none">
-                <div className="absolute top-[10%] left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-cyan-900/10 blur-[100px] rounded-full" />
-                <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-blue-900/10 blur-[100px] rounded-full" />
-            </div>
-
+        <main className="min-h-screen bg-bg text-text flex flex-col">
             {/* Header */}
-            <header className="z-10 w-full p-8 flex justify-center">
+            <header className="w-full px-8 py-10 flex justify-center border-b border-text/5">
                 <div className="text-center">
-                    <h1 className="text-4xl md:text-5xl font-thin tracking-tighter">
-                        LOOKS<span className="text-cyan-400 font-light italic">MAXING</span>
+                    <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-primary">
+                        FACERATE<span className="font-light text-text/40">.AI</span>
                     </h1>
-                    <p className="text-gray-500 text-xs tracking-[0.4em] uppercase mt-2">Precision AI Engine</p>
+                    <p className="text-text/40 text-xs tracking-[0.3em] uppercase mt-2 font-medium">
+                        Precision AI Engine
+                    </p>
                 </div>
             </header>
 
-            {/* Content Actions */}
-            <div className="z-10 flex-1 flex flex-col items-center justify-center p-4 md:p-12 w-full max-w-7xl mx-auto">
+            {/* Content */}
+            <div className="flex-1 flex flex-col items-center p-6 md:p-16 w-full max-w-6xl mx-auto">
 
-                {/* Tabs */}
-                <div className="flex bg-white/5 p-1 rounded-full mb-12 border border-white/5 backdrop-blur-md">
+                {/* Mode Tabs */}
+                <div className="flex border border-text/10 rounded-md mb-16">
                     <button
                         onClick={() => setMode('front')}
-                        className={`px-8 py-2 rounded-full text-xs font-bold tracking-widest transition-all ${state.mode === 'front' ? 'bg-cyan-400 text-black shadow-[0_0_20px_rgba(34,211,238,0.3)]' : 'text-gray-500 hover:text-white'
+                        className={`px-8 py-2.5 text-xs font-semibold tracking-widest uppercase transition-opacity duration-150 ${state.mode === 'front'
+                            ? 'bg-primary text-bg'
+                            : 'bg-transparent text-text/40 hover:text-text/70'
                             }`}
                     >
-                        FRONT
+                        Front
                     </button>
                     <button
                         onClick={() => setMode('side')}
-                        className={`px-8 py-2 rounded-full text-xs font-bold tracking-widest transition-all ${state.mode === 'side' ? 'bg-cyan-400 text-black shadow-[0_0_20px_rgba(34,211,238,0.3)]' : 'text-gray-500 hover:text-white'
+                        className={`px-8 py-2.5 text-xs font-semibold tracking-widest uppercase transition-opacity duration-150 ${state.mode === 'side'
+                            ? 'bg-primary text-bg'
+                            : 'bg-transparent text-text/40 hover:text-text/70'
                             }`}
                     >
-                        SIDE
+                        Side
                     </button>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 w-full items-start mb-16">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 w-full items-start mb-20">
 
                     {/* LEFT COLUMN: Upload & Preview */}
                     <div className="flex flex-col items-center gap-8">
@@ -223,22 +207,21 @@ export default function Home() {
                             />
                         )}
 
-                        {/* Action Buttons Block */}
+                        {/* Action Button */}
                         <div className="w-full max-w-sm">
                             <button
                                 onClick={handleGetRatings}
                                 disabled={state.status !== 'ready'}
-                                className={`w-full py-4 rounded-2xl font-black tracking-widest transition-all shadow-lg ${state.status === 'ready'
-                                    ? 'bg-cyan-400 text-black hover:scale-[1.02] hover:shadow-cyan-400/20 cursor-pointer'
-                                    : 'bg-white/5 text-gray-600 cursor-not-allowed border border-white/5'
+                                className={`w-full py-4 rounded-md text-xs font-bold tracking-widest uppercase transition-opacity duration-150 ${state.status === 'ready'
+                                    ? 'bg-primary text-bg cursor-pointer hover:opacity-90'
+                                    : 'bg-text/5 text-text/20 cursor-not-allowed border border-text/5'
                                     }`}
                             >
-                                {state.status === 'scoring' ? 'ANALYZING...' : 'GET RATINGS'}
+                                {state.status === 'scoring' ? 'Analyzing...' : 'Get Ratings'}
                             </button>
 
-                            {/* Disabled Reason Hint */}
                             {state.status !== 'ready' && state.status !== 'scoring' && state.status !== 'result' && state.status !== 'idle' && (
-                                <p className="text-center text-[10px] text-gray-500 uppercase tracking-wider mt-3">
+                                <p className="text-center text-[10px] text-text/30 uppercase tracking-wider mt-3 font-medium">
                                     {state.status === 'image_selected' || state.status === 'detecting'
                                         ? "Wait for detection..."
                                         : state.status === 'error'
@@ -251,7 +234,6 @@ export default function Home() {
 
                     {/* RIGHT COLUMN: Status & Result Card */}
                     <div className="flex flex-col items-center lg:items-start w-full min-h-[400px] gap-6">
-
                         {state.status === 'result' ? (
                             <ResultCard
                                 scores={state.scores}
@@ -266,24 +248,25 @@ export default function Home() {
                         ) : (
                             <StatusPanel state={state} />
                         )}
-
                     </div>
                 </div>
 
-                {/* DETAILED ANALYSIS SECTION (Full Width) */}
+                {/* DETAILED ANALYSIS SECTION */}
                 {state.status === 'result' && (
-                    <div className="w-full max-w-4xl mx-auto border-t border-white/5 pt-16 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+                    <div className="w-full max-w-4xl mx-auto border-t border-text/10 pt-16">
                         <div className="text-center mb-12">
-                            <h2 className="text-2xl md:text-3xl font-thin tracking-[0.2em] uppercase text-white mb-2">Detailed Report</h2>
-                            <div className="h-px w-24 bg-cyan-500/50 mx-auto" />
+                            <h2 className="text-xl md:text-2xl font-semibold tracking-tight text-primary mb-2">
+                                Detailed Report
+                            </h2>
+                            <div className="h-px w-16 bg-primary/20 mx-auto" />
                         </div>
                         <AnalysisGrid scores={state.scores} />
                     </div>
                 )}
             </div>
 
-            <footer className="w-full p-6 text-center text-[10px] text-gray-700 uppercase tracking-widest">
-                &copy; 2026 FaceRatings AI • Client-Side Secure Processing
+            <footer className="w-full py-8 text-center text-[10px] text-text/25 uppercase tracking-widest font-medium border-t border-text/5">
+                &copy; 2026 FaceRate AI &middot; Client-Side Secure Processing
             </footer>
         </main>
     );

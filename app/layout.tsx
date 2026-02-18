@@ -1,7 +1,9 @@
 
+import './globals.css'
+
 export const metadata = {
-    title: 'LooksMaxing AI',
-    description: 'Precision Face Ratings MVP',
+    title: 'FaceRate AI — Precision Face Analysis',
+    description: 'AI-powered facial analysis with precision landmark scoring. Upload your photo for instant ratings.',
 }
 
 export default function RootLayout({
@@ -11,7 +13,7 @@ export default function RootLayout({
 }) {
     return (
         <html lang="en">
-            <body className="bg-black text-white antialiased selection:bg-cyan-900 selection:text-white">
+            <body className="bg-bg text-text font-base antialiased">
                 {children}
             </body>
         </html>

@@ -1,7 +1,7 @@
 
 import React, { useRef, useState } from 'react';
 import { Mode } from '@/lib/state';
-import { Upload, Camera, Loader2, X } from 'lucide-react';
+import { Upload, Camera, X } from 'lucide-react';
 
 interface UploadCardProps {
     mode: Mode;
@@ -67,21 +67,21 @@ export const UploadCard = ({
     }, [showCamera]);
 
     return (
-        <div className="relative group w-full aspect-square max-w-sm rounded-[2rem] overflow-hidden border border-white/10 bg-white/5 hover:border-cyan-400/30 transition-all duration-500 flex items-center justify-center shadow-2xl">
+        <div className="relative w-full aspect-square max-w-sm rounded-lg overflow-hidden border border-text/10 bg-surface flex items-center justify-center">
             {showCamera ? (
-                <div className="absolute inset-0 bg-black flex flex-col items-center justify-center p-4">
-                    <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover rounded-xl mb-4" />
+                <div className="absolute inset-0 bg-text flex flex-col items-center justify-center p-4">
+                    <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover rounded-md mb-4" />
                     <canvas ref={canvasRef} className="hidden" />
-                    <div className="flex gap-4">
+                    <div className="flex gap-3">
                         <button
                             onClick={takePhoto}
-                            className="bg-cyan-400 text-black px-6 py-2 rounded-full font-bold uppercase tracking-widest hover:scale-105 transition-transform"
+                            className="bg-primary text-bg px-6 py-2.5 rounded-md text-xs font-bold uppercase tracking-widest transition-opacity duration-150 hover:opacity-90"
                         >
                             Capture
                         </button>
                         <button
                             onClick={() => setShowCamera(false)}
-                            className="bg-red-500/20 text-red-400 px-6 py-2 rounded-full font-bold uppercase tracking-widest hover:bg-red-500/30 transition-colors"
+                            className="bg-transparent text-bg/70 px-6 py-2.5 rounded-md text-xs font-bold uppercase tracking-widest border border-bg/20 transition-opacity duration-150 hover:text-bg"
                         >
                             Cancel
                         </button>
@@ -97,34 +97,34 @@ export const UploadCard = ({
                     />
                     <button
                         onClick={onClear}
-                        className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white/70 hover:text-white hover:bg-red-500/80 transition-all opacity-0 group-hover:opacity-100"
+                        className="absolute top-3 right-3 p-2 bg-bg/80 rounded-md text-text/50 hover:text-text transition-opacity duration-150 opacity-0 group-hover:opacity-100"
                     >
-                        <X className="w-5 h-5" />
+                        <X className="w-4 h-4" />
                     </button>
                 </div>
             ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center gap-6">
+                <div className="w-full h-full flex flex-col items-center justify-center gap-6 p-8">
                     <button
                         onClick={() => fileInputRef.current?.click()}
-                        className="flex flex-col items-center group/btn"
+                        className="flex flex-col items-center group"
                     >
-                        <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-4 group-hover/btn:bg-cyan-400/10 transition-colors border border-white/10 group-hover/btn:border-cyan-400/50">
-                            <Upload className="w-8 h-8 text-gray-400 group-hover/btn:text-cyan-400 transition-colors" />
+                        <div className="w-16 h-16 rounded-md bg-primary/5 flex items-center justify-center mb-4 border border-text/10 group-hover:border-primary/30 transition-opacity duration-150">
+                            <Upload className="w-6 h-6 text-text/30 group-hover:text-primary transition-opacity duration-150" />
                         </div>
-                        <span className="text-xs text-gray-500 font-medium tracking-widest uppercase group-hover/btn:text-gray-300 transition-colors">
+                        <span className="text-xs text-text/40 font-medium tracking-widest uppercase group-hover:text-text/70 transition-opacity duration-150">
                             Upload {mode} Photo
                         </span>
                     </button>
 
-                    <div className="flex items-center gap-3 opacity-30">
-                        <div className="h-px w-12 bg-white"></div>
-                        <span className="text-[10px] uppercase tracking-widest">OR</span>
-                        <div className="h-px w-12 bg-white"></div>
+                    <div className="flex items-center gap-3">
+                        <div className="h-px w-10 bg-text/10"></div>
+                        <span className="text-[10px] uppercase tracking-widest text-text/20 font-medium">or</span>
+                        <div className="h-px w-10 bg-text/10"></div>
                     </div>
 
                     <button
                         onClick={() => setShowCamera(true)}
-                        className="flex items-center gap-2 text-gray-400 hover:text-cyan-400 transition-colors text-sm font-bold uppercase tracking-wider"
+                        className="flex items-center gap-2 text-text/30 hover:text-primary text-xs font-semibold uppercase tracking-wider transition-opacity duration-150"
                     >
                         <Camera className="w-4 h-4" />
                         Open Camera
