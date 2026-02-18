@@ -56,6 +56,8 @@ export interface FullAnalysisResult extends AnalysisScores {
     warnings: Warning[];
 }
 
+export type AnalysisResult = FullAnalysisResult;
+
 /**
  * 1. DETECT (Pose Check + Warnings)
  */
