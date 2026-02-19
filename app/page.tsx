@@ -9,24 +9,21 @@ import { StatusPanel } from '@/components/StatusPanel';
 import { ResultCard } from '@/components/ResultCard';
 import { AnalysisGrid } from '@/components/AnalysisGrid';
 
-// ----- Initial State -----
-const INITIAL_STATE = (mode: Mode = 'front'): ScanState => ({
-    status: 'idle',
-    mode
-});
+
+
+import { useScan } from '@/context/ScanContext';
 
 // ----- Main Page -----
 export default function Home() {
-    const [state, setState] = useState<ScanState>(INITIAL_STATE('front'));
+    const { state, setState } = useScan();
     const [showCamera, setShowCamera] = useState(false);
     const imgRef = useRef<HTMLImageElement>(null);
 
-    // --- State Transitions ---
-
     const setMode = (mode: Mode) => {
-        setState(INITIAL_STATE(mode));
+        setState({ status: 'idle', mode });
         setShowCamera(false);
     };
+
 
     const handleImageSelect = useCallback((url: string) => {
         setState(prev => ({ status: 'image_selected', mode: prev.mode, previewUrl: url }));
@@ -103,12 +100,11 @@ export default function Home() {
     }, [state.status, state.mode]);
 
     // Score
-    const handleGetRatings = async () => {
+    const handleGetRatings = useCallback(async () => {
         if (state.status !== 'ready') return;
-        const currentUrl = state.previewUrl;
-        const currentWarnings = state.warnings;
+        const { mode, previewUrl, warnings } = state;
 
-        setState({ status: 'scoring', mode: state.mode, previewUrl: currentUrl, warnings: currentWarnings });
+        setState({ status: 'scoring', mode, previewUrl, warnings });
 
         setTimeout(async () => {
             try {
@@ -116,23 +112,29 @@ export default function Home() {
                 const analysis = await scoreFace(imgRef.current);
                 setState({
                     status: 'result',
-                    mode: state.mode,
-                    previewUrl: currentUrl,
+                    mode,
+                    previewUrl,
                     scores: analysis,
                     warnings: analysis.warnings
                 });
             } catch (error) {
                 setState({
                     status: 'error',
-                    mode: state.mode,
-                    previewUrl: currentUrl,
+                    mode,
+                    previewUrl,
                     code: 'INTERNAL',
                     tips: ["Scoring failed. Please retry."]
                 });
             }
         }, 1500);
-    };
+    }, [state]);
 
+    // Auto-Score Effect
+    useEffect(() => {
+        if (state.status === 'ready') {
+            handleGetRatings();
+        }
+    }, [state.status, handleGetRatings]);
     const handleClear = () => {
         setMode(state.mode);
     };

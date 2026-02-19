@@ -23,9 +23,6 @@ const MetricBox = ({ insight, type }: { insight: MetricInsight, type: 'strength'
             >
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className={`w-9 h-9 rounded-md flex items-center justify-center ${type === 'strength' ? 'bg-primary/5' : 'bg-text/5'}`}>
-                            <span className="text-lg">{insight.emoji}</span>
-                        </div>
                         <div>
                             <p className="text-[9px] uppercase tracking-[0.2em] text-text/35 font-bold mb-0.5">{insight.label}</p>
                             <div className="flex items-center gap-2">

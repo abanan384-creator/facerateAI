@@ -1,4 +1,5 @@
 
+import { ScanProvider } from '@/context/ScanContext'
 import './globals.css'
 
 export const metadata = {
@@ -14,7 +15,9 @@ export default function RootLayout({
     return (
         <html lang="en">
             <body className="bg-bg text-text font-base antialiased">
-                {children}
+                <ScanProvider>
+                    {children}
+                </ScanProvider>
             </body>
         </html>
     )

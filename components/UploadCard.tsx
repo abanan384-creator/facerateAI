@@ -1,7 +1,7 @@
 
 import React, { useRef, useState } from 'react';
 import { Mode } from '@/lib/state';
-import { Upload, Camera, X } from 'lucide-react';
+import { Upload, Camera, X, RefreshCcw } from 'lucide-react';
 
 interface UploadCardProps {
     mode: Mode;
@@ -26,9 +26,15 @@ export const UploadCard = ({
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
+
     const startCamera = async () => {
+        stopCamera();
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            const constraints = {
+                video: { facingMode: facingMode }
+            };
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
             }
@@ -43,6 +49,10 @@ export const UploadCard = ({
             tracks.forEach(track => track.stop());
             videoRef.current.srcObject = null;
         }
+    };
+
+    const toggleCamera = () => {
+        setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
     };
 
     const takePhoto = () => {
@@ -64,7 +74,8 @@ export const UploadCard = ({
         if (showCamera) startCamera();
         else stopCamera();
         return () => stopCamera();
-    }, [showCamera]);
+    }, [showCamera, facingMode]);
+
 
     return (
         <div className="relative w-full aspect-square max-w-sm rounded-lg overflow-hidden border border-text/10 bg-surface flex items-center justify-center">
@@ -78,6 +89,13 @@ export const UploadCard = ({
                             className="bg-primary text-bg px-6 py-2.5 rounded-md text-xs font-bold uppercase tracking-widest transition-opacity duration-150 hover:opacity-90"
                         >
                             Capture
+                        </button>
+                        <button
+                            onClick={toggleCamera}
+                            className="bg-bg/20 text-bg px-4 py-2.5 rounded-md text-xs font-bold uppercase tracking-widest transition-opacity duration-150 hover:bg-bg/30"
+                            title="Switch Camera"
+                        >
+                            <RefreshCcw className="w-4 h-4" />
                         </button>
                         <button
                             onClick={() => setShowCamera(false)}
