@@ -43,7 +43,15 @@ const INDICES = {
     // 2 is Subnasale (under nose). 
     // 152 is Chin (Menton).
     nasion: 168,
-    subnasale: 2
+    subnasale: 2,
+    eye_left_inner: 133,
+    eye_left_outer: 33,
+    eye_left_top: 159,
+    eye_left_bottom: 145,
+    eye_right_inner: 362,
+    eye_right_outer: 263,
+    eye_right_top: 386,
+    eye_right_bottom: 374
 };
 
 export interface DetectionResult {
@@ -167,6 +175,47 @@ export async function scoreFace(img: HTMLImageElement): Promise<FullAnalysisResu
     const cheek_ratio = cheek_width / jaw_width;
     const face_ratio = (face_width / face_height);
 
+    // Eye Analysis
+    const p_l_inner = getKeypoint(INDICES.eye_left_inner);
+    const p_l_outer = getKeypoint(INDICES.eye_left_outer);
+    const p_l_top = getKeypoint(INDICES.eye_left_top);
+    const p_l_bottom = getKeypoint(INDICES.eye_left_bottom);
+
+    const p_r_inner = getKeypoint(INDICES.eye_right_inner);
+    const p_r_outer = getKeypoint(INDICES.eye_right_outer);
+    const p_r_top = getKeypoint(INDICES.eye_right_top);
+    const p_r_bottom = getKeypoint(INDICES.eye_right_bottom);
+
+    const eye_l_width = dist(p_l_inner, p_l_outer);
+    const eye_l_height = dist(p_l_top, p_l_bottom);
+    const eye_r_width = dist(p_r_inner, p_r_outer);
+    const eye_r_height = dist(p_r_top, p_r_bottom);
+
+    const inter_eye_dist = dist(p_l_inner, p_r_inner);
+    const avg_eye_width = (eye_l_width + eye_r_width) / 2;
+    const avg_eye_height = (eye_l_height + eye_r_height) / 2;
+
+    // 1. Canthal Tilt (Angle)
+    // Left eye tilt: outer vs inner height difference
+    const l_tilt = (p_l_inner.y - p_l_outer.y) / eye_l_width; // Positive means outer is higher
+    const r_tilt = (p_r_inner.y - p_r_outer.y) / eye_r_width;
+    const avg_tilt = (l_tilt + r_tilt) / 2;
+
+    // 2. Eye Spacing Ratio (Ideal ~1.0)
+    const spacing_ratio = inter_eye_dist / avg_eye_width;
+
+    // 3. Compactness (Ideal ~0.4 - 0.5)
+    const compactness = avg_eye_height / avg_eye_width;
+
+    // Eye Score Calculation
+    const tilt_score = norm(avg_tilt, -0.05, 0.15); // -5% to +15% slope
+    const spacing_score = 100 - Math.abs(spacing_ratio - 1.0) * 200; // 1.0 is perfect, 1.5 or 0.5 is 0
+    const compactness_score = norm(compactness, 0.6, 0.35); // Lower is better (more hunter-like)
+
+    const eyes = Math.round(
+        clamp(0.4 * tilt_score + 0.3 * spacing_score + 0.3 * compactness_score, 0, 100)
+    );
+
     // Quality Metrics
     const q = getQualityMetrics(img);
 
@@ -190,7 +239,7 @@ export async function scoreFace(img: HTMLImageElement): Promise<FullAnalysisResu
 
     // 5. Overall
     const overall = Math.round(
-        0.30 * jawline + 0.25 * cheekbones + 0.25 * masculinity + 0.20 * clamp(thirds_score, 0, 100)
+        0.25 * jawline + 0.20 * cheekbones + 0.20 * masculinity + 0.20 * eyes + 0.15 * clamp(thirds_score, 0, 100)
     );
 
     // 6. Potential & Warnings
@@ -227,6 +276,7 @@ export async function scoreFace(img: HTMLImageElement): Promise<FullAnalysisResu
         jawline,
         cheekbones,
         masculinity,
+        eyes,
         facial_thirds: Math.round(clamp(thirds_score, 0, 100)),
         overall,
         potential: finalPotential,

@@ -8,6 +8,7 @@ import { UploadCard } from '@/components/UploadCard';
 import { StatusPanel } from '@/components/StatusPanel';
 import { ResultCard } from '@/components/ResultCard';
 import { AnalysisGrid } from '@/components/AnalysisGrid';
+import { ScoreRing } from '@/components/ScoreRing';
 
 
 
@@ -237,16 +238,19 @@ export default function Home() {
                     {/* RIGHT COLUMN: Status & Result Card */}
                     <div className="flex flex-col items-center lg:items-start w-full min-h-[400px] gap-6">
                         {state.status === 'result' ? (
-                            <ResultCard
-                                scores={state.scores}
-                                warnings={state.warnings}
-                                onClear={handleClear}
-                                onRescan={handleGetRatings}
-                                onShare={() => {
-                                    navigator.clipboard.writeText(JSON.stringify(state.scores, null, 2));
-                                    alert("Results copied to clipboard!");
-                                }}
-                            />
+                            <>
+                                <ScoreRing scores={state.scores} />
+                                <ResultCard
+                                    scores={state.scores}
+                                    warnings={state.warnings}
+                                    onClear={handleClear}
+                                    onRescan={handleGetRatings}
+                                    onShare={() => {
+                                        navigator.clipboard.writeText(JSON.stringify(state.scores, null, 2));
+                                        alert("Results copied to clipboard!");
+                                    }}
+                                />
+                            </>
                         ) : (
                             <StatusPanel state={state} />
                         )}

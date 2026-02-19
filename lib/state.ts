@@ -7,7 +7,9 @@ export interface AnalysisScores {
     jawline: number;
     cheekbones: number;
     masculinity: number;
+    eyes: number;
     facial_thirds: number;
+    harmony: number;
     overall: number;
     potential: number;
 }

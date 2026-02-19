@@ -58,6 +58,21 @@ export const RECOMMENDATIONS: Record<string, Recommendation> = {
         timeframe: '6-24 месяцев'
     },
 
+    eyes: {
+        title: "Улучшение эстетики глаз",
+        problem: "Низкий балл глаз может быть связан с отрицательным кантозальным наклоном, большой высотой века или неправильным расстоянием между глазами",
+        solutions: [
+            "**Уход за кожей** - Кремы с ретинолом и кофеином против тёмных кругов и мешков",
+            "**Холодные компрессы** - Утром для уменьшения отёчности и подтяжки век",
+            "**Squinting/Hunter Eyes exercises** - Легкое прищуривание нижним веком для укрепления круговой мышцы глаза",
+            "**Массаж Гуаша** - Лимфодренаж вокруг глаз для улучшения контуров",
+            "**Сон и гидратация** - Минимум 7-8 часов сна и 2л воды для свежего взгляда",
+            "**Кантопластика** - Хирургическая коррекция наклона глаз (радикально)"
+        ],
+        difficulty: 'medium',
+        timeframe: '1-6 месяцев'
+    },
+
     facial_thirds: {
         title: "Коррекция пропорций лица",
         problem: "Непропорциональные трети лица (верхняя/средняя/нижняя зоны не равны)",
@@ -96,16 +111,12 @@ export interface MetricInsight {
     status: 'excellent' | 'good' | 'average' | 'needs_improvement';
 }
 
+import { AnalysisScores } from './state';
+
 /**
  * Analyze scores and return insights
  */
-export function analyzeScores(scores: {
-    jawline: number;
-    cheekbones: number;
-    masculinity: number;
-    facial_thirds: number;
-    potential: number;
-}): {
+export function analyzeScores(scores: AnalysisScores): {
     strengths: MetricInsight[];
     improvements: MetricInsight[];
 } {
@@ -128,6 +139,12 @@ export function analyzeScores(scores: {
             label: 'Masculinity',
             value: scores.masculinity,
             status: getStatus(scores.masculinity),
+        },
+        {
+            metric: 'eyes',
+            label: 'Eyes',
+            value: scores.eyes,
+            status: getStatus(scores.eyes),
         },
         {
             metric: 'facial_thirds',

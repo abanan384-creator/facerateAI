@@ -49,6 +49,7 @@ export const ResultCard = ({ scores, warnings, onClear, onRescan, onShare }: Res
             {/* Metrics */}
             <div className="space-y-1">
                 <Metric label="Potential" value={scores.potential} highlight />
+                <Metric label="Eyes" value={scores.eyes} />
                 <Metric label="Masculinity" value={scores.masculinity} />
                 <Metric label="Jawline" value={scores.jawline} />
                 <Metric label="Cheekbones" value={scores.cheekbones} />
