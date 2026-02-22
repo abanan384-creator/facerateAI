@@ -3,17 +3,18 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { ScanState, Mode, AnalysisScores, Warning } from '@/lib/state';
 
-// Saved result per mode (only serializable data, no blob URLs)
-interface SavedResult {
-    scores: AnalysisScores;
-    warnings: Warning[];
-    previewUrl?: string; // kept only if it's a data URL (not a blob URL)
+// Persistent data per mode
+interface ModePersistence {
+    status: ScanState['status'];
+    previewUrl?: string;
+    scores?: AnalysisScores;
+    warnings?: Warning[];
 }
 
 interface ScanContextType {
     state: ScanState;
     setState: React.Dispatch<React.SetStateAction<ScanState>>;
-    savedResults: Record<Mode, SavedResult | null>;
+    savedResults: Record<Mode, ModePersistence | null>;
     switchMode: (mode: Mode) => void;
     clearResult: (mode?: Mode) => void;
 }
@@ -25,9 +26,9 @@ const INITIAL_STATE = (mode: Mode = 'front'): ScanState => ({
 
 const ScanContext = createContext<ScanContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'facerate_results_v2';
+const STORAGE_KEY = 'facerate_session_v3';
 
-function loadSavedResults(): Record<Mode, SavedResult | null> {
+function loadSavedData(): Record<Mode, ModePersistence | null> {
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (raw) {
@@ -45,63 +46,61 @@ function loadSavedResults(): Record<Mode, SavedResult | null> {
 
 export function ScanProvider({ children }: { children: React.ReactNode }) {
     const [state, setState] = useState<ScanState>(INITIAL_STATE('front'));
-    const [savedResults, setSavedResults] = useState<Record<Mode, SavedResult | null>>({ front: null, side: null });
+    const [savedResults, setSavedResults] = useState<Record<Mode, ModePersistence | null>>({ front: null, side: null });
     const [isInitialized, setIsInitialized] = useState(false);
 
     // Load saved results on mount
     useEffect(() => {
-        const results = loadSavedResults();
+        const results = loadSavedData();
         setSavedResults(results);
 
-        // Restore state for front mode if there's a saved result
+        // Restore state for front mode if available
         if (results.front) {
             setState({
-                status: 'result',
-                mode: 'front',
-                previewUrl: results.front.previewUrl ?? '',
-                scores: results.front.scores,
-                warnings: results.front.warnings,
-            });
+                ...INITIAL_STATE('front'),
+                ...results.front,
+                mode: 'front'
+            } as ScanState);
         }
         setIsInitialized(true);
     }, []);
 
-    // When state becomes 'result', save the result for the current mode
+    // Persist changes whenever state changes
     useEffect(() => {
         if (!isInitialized) return;
-        if (state.status === 'result') {
-            const isDataUrl = state.previewUrl?.startsWith('data:');
-            const newResult: SavedResult = {
-                scores: state.scores,
-                warnings: state.warnings,
-                previewUrl: isDataUrl ? state.previewUrl : undefined,
-            };
-            setSavedResults(prev => {
-                const updated = { ...prev, [state.mode]: newResult };
-                try {
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-                } catch (e) {
-                    console.error('Failed to save results', e);
-                }
-                return updated;
-            });
-        }
+
+        // Determine what to save for the current mode
+        const toSave: ModePersistence = {
+            status: state.status,
+            previewUrl: state.previewUrl?.startsWith('data:') ? state.previewUrl : undefined,
+            warnings: (state as any).warnings,
+            scores: (state as any).scores,
+        };
+
+        setSavedResults(prev => {
+            const updated = { ...prev, [state.mode]: toSave };
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+            } catch (e) {
+                console.warn('Storage limit might be exceeded', e);
+                // If it fails, we still keep it in memory
+            }
+            return updated;
+        });
     }, [state, isInitialized]);
 
-    // Switch mode: restore saved result for that mode or go to idle
+    // Switch mode: restore saved data for that mode or go to idle
     const switchMode = useCallback((mode: Mode) => {
         setSavedResults(prev => {
             const saved = prev[mode];
-            if (saved) {
+            if (saved && (saved.previewUrl || saved.status === 'result')) {
                 setState({
-                    status: 'result',
-                    mode,
-                    previewUrl: saved.previewUrl ?? '',
-                    scores: saved.scores,
-                    warnings: saved.warnings,
-                });
+                    ...INITIAL_STATE(mode),
+                    ...saved,
+                    mode
+                } as ScanState);
             } else {
-                setState({ status: 'idle', mode });
+                setState(INITIAL_STATE(mode));
             }
             return prev;
         });
@@ -119,7 +118,7 @@ export function ScanProvider({ children }: { children: React.ReactNode }) {
             }
             return updated;
         });
-        setState({ status: 'idle', mode: targetMode });
+        setState(INITIAL_STATE(targetMode));
     }, [state.mode]);
 
     return (

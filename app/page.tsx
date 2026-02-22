@@ -9,6 +9,7 @@ import { StatusPanel } from '@/components/StatusPanel';
 import { ResultCard } from '@/components/ResultCard';
 import { AnalysisGrid } from '@/components/AnalysisGrid';
 import { ScoreRing } from '@/components/ScoreRing';
+import { resizeImageToBase64 } from '@/lib/utils';
 
 
 
@@ -190,11 +191,18 @@ export default function Home() {
                             previewUrl={(state as any).previewUrl}
                             showCamera={showCamera}
                             setShowCamera={setShowCamera}
-                            onUpload={(e) => {
+                            onUpload={async (e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
-                                    const url = URL.createObjectURL(file);
-                                    handleImageSelect(url);
+                                    try {
+                                        const base64 = await resizeImageToBase64(file);
+                                        handleImageSelect(base64);
+                                    } catch (err) {
+                                        console.error("Failed to process image", err);
+                                        // Fallback to blob if resize fails
+                                        const url = URL.createObjectURL(file);
+                                        handleImageSelect(url);
+                                    }
                                 }
                             }}
                             onCameraCapture={(url) => handleImageSelect(url)}
