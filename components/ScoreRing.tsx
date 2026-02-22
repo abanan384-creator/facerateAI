@@ -38,9 +38,36 @@ const REFERRAL_LINKS: Record<string, { red: string; yellow: string; green: strin
         yellow: 'https://www.amazon.com/s?k=facial+roller+massager',
         green: 'https://www.amazon.com/s?k=collagen+peptides',
     },
+    nose: {
+        label: 'Nose',
+        red: 'https://www.amazon.com/s?k=nose+shaping+clip',
+        yellow: 'https://www.amazon.com/s?k=blackhead+remover+nose',
+        green: 'https://www.amazon.com/s?k=sunscreen+for+face',
+    },
+    forehead: {
+        label: 'Forehead',
+        red: 'https://www.amazon.com/s?k=forehead+wrinkle+patches',
+        yellow: 'https://www.amazon.com/s?k=retinol+serum+forehead',
+        green: 'https://www.amazon.com/s?k=moisturizing+face+mask',
+    },
+    symmetry: {
+        label: 'Symmetry',
+        red: 'https://www.amazon.com/s?k=facial+asymmetry+exercise+tool',
+        yellow: 'https://www.amazon.com/s?k=face+yoga+book',
+        green: 'https://www.amazon.com/s?k=jade+roller+and+gua+sha+set',
+    },
+    harmony: {
+        label: 'Harmony',
+        red: 'https://www.amazon.com/s?k=full+face+sculpting+kit',
+        yellow: 'https://www.amazon.com/s?k=facial+fitness+device',
+        green: 'https://www.amazon.com/s?k=luxury+skincare+set',
+    },
 };
 
-const METRICS: (keyof typeof REFERRAL_LINKS)[] = ['jawline', 'cheekbones', 'masculinity', 'eyes', 'facial_thirds'];
+const METRICS: (keyof typeof REFERRAL_LINKS)[] = [
+    'jawline', 'cheekbones', 'masculinity', 'eyes', 'facial_thirds',
+    'nose', 'forehead', 'symmetry', 'harmony'
+];
 
 function getColor(value: number): 'green' | 'yellow' | 'red' {
     if (value >= 65) return 'green';

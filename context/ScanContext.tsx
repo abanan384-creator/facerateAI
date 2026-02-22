@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { ScanState, Mode, AnalysisScores, Warning } from '@/lib/state';
 
 // Persistent data per mode
@@ -29,6 +29,22 @@ const ScanContext = createContext<ScanContextType | undefined>(undefined);
 export function ScanProvider({ children }: { children: React.ReactNode }) {
     const [state, setState] = useState<ScanState>(INITIAL_STATE('front'));
     const [savedResults, setSavedResults] = useState<Record<Mode, ModePersistence | null>>({ front: null, side: null });
+
+    // Persist changes in memory whenever state changes
+    useEffect(() => {
+        // Determine what to save for the current mode
+        const toSave: ModePersistence = {
+            status: state.status,
+            previewUrl: (state as any).previewUrl,
+            warnings: (state as any).warnings,
+            scores: (state as any).scores,
+        };
+
+        setSavedResults(prev => ({
+            ...prev,
+            [state.mode]: toSave
+        }));
+    }, [state]);
 
     // Switch mode: restore saved data for that mode or go to idle
     const switchMode = useCallback((mode: Mode) => {
