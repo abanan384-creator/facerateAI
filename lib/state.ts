@@ -9,6 +9,9 @@ export interface AnalysisScores {
     masculinity: number;
     eyes: number;
     facial_thirds: number;
+    nose: number;
+    forehead: number;
+    symmetry: number;
     harmony: number;
     overall: number;
     potential: number;

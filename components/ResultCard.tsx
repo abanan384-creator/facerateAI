@@ -50,9 +50,13 @@ export const ResultCard = ({ scores, warnings, onClear, onRescan, onShare }: Res
             <div className="space-y-1">
                 <Metric label="Potential" value={scores.potential} highlight />
                 <Metric label="Eyes" value={scores.eyes} />
-                <Metric label="Masculinity" value={scores.masculinity} />
+                <Metric label="Symmetry" value={scores.symmetry} />
+                <Metric label="Harmony" value={scores.harmony} />
                 <Metric label="Jawline" value={scores.jawline} />
                 <Metric label="Cheekbones" value={scores.cheekbones} />
+                <Metric label="Masculinity" value={scores.masculinity} />
+                <Metric label="Nose" value={scores.nose} />
+                <Metric label="Forehead" value={scores.forehead} />
                 <Metric label="Facial Thirds" value={scores.facial_thirds} />
             </div>
 

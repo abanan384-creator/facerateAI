@@ -16,12 +16,12 @@ import { useScan } from '@/context/ScanContext';
 
 // ----- Main Page -----
 export default function Home() {
-    const { state, setState } = useScan();
+    const { state, setState, switchMode, clearResult } = useScan();
     const [showCamera, setShowCamera] = useState(false);
     const imgRef = useRef<HTMLImageElement>(null);
 
     const setMode = (mode: Mode) => {
-        setState({ status: 'idle', mode });
+        switchMode(mode);
         setShowCamera(false);
     };
 
@@ -137,7 +137,8 @@ export default function Home() {
         }
     }, [state.status, handleGetRatings]);
     const handleClear = () => {
-        setMode(state.mode);
+        clearResult(state.mode);
+        setShowCamera(false);
     };
 
     return (

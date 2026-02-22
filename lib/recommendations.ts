@@ -88,6 +88,61 @@ export const RECOMMENDATIONS: Record<string, Recommendation> = {
         timeframe: '1-36 месяцев'
     },
 
+    nose: {
+        title: "Эстетика носа",
+        problem: "Непропорциональный нос: ширина основания отличается от идеала (равного межглазному расстоянию) или длина не соответствует пропорциям лица",
+        solutions: [
+            "**Контуринг** - Нанесение тёмного тона по бокам спинки носа (визуально сужает)",
+            "**Хайлайтер** - Нанесение на спинку носа (визуально удлиняет/выпрямляет)",
+            "**Причёска** - Объём на макушке смещает визуальный баланс лица",
+            "**Ринопластика** - Хирургическая коррекция (для значительных изменений)",
+            "**Нитевая ринопластика** - Малоинвазивная коррекция формы кончика"
+        ],
+        difficulty: 'medium',
+        timeframe: 'Немедленно (контуринг) / 1-2 недели (операция)'
+    },
+
+    forehead: {
+        title: "Пропорции лба",
+        problem: "Ширина лба не соответствует ширине скул — идеал: лоб слегка уже скул (≈0.95×)",
+        solutions: [
+            "**Причёска** - Чёлка сужает широкий лоб; объём по бокам расширяет узкий",
+            "**Укладка** - Боковой пробор визуально балансирует ширину лба",
+            "**Mewing** - Долгосрочное изменение структуры лицевых костей",
+            "**Контуринг** - Тёмный тон по краям лба (сужает)",
+            "**Ботокс** - Поднятие бровей может визуально скорректировать высоту лба"
+        ],
+        difficulty: 'easy',
+        timeframe: 'Немедленно'
+    },
+
+    symmetry: {
+        title: "Улучшение симметрии лица",
+        problem: "Асимметрия лица: заметная разница между левой и правой сторонами (глаза, скулы, челюсть, рот)",
+        solutions: [
+            "**Mewing** - Симметричное давление языка на нёбо улучшает баланс",
+            "**Жевание** - Равномерно жевать с обеих сторон (не предпочитать одну)",
+            "**Сон** - Избегать постоянного сна на одной стороне (деформирует лицо)",
+            "**Осанка шеи** - Выровнять положение головы и шеи (SCM-мышцы)",
+            "**Фото** - Снимать под правильным углом — лёгкий поворот скрывает асимметрию"
+        ],
+        difficulty: 'hard',
+        timeframe: '6-36 месяцев'
+    },
+
+    harmony: {
+        title: "Гармония черт лица",
+        problem: "Отдельные черты лица не образуют единого гармоничного целого — одни черты доминируют или контрастируют с другими",
+        solutions: [
+            "**Работа над слабыми зонами** - Подтяни показатели с наименьшими баллами",
+            "**Сбалансированный уход** - Комплексный подход: лицо, тело, осанка",
+            "**Стиль** - Одежда и стрижка, которые подчёркивают сильные стороны",
+            "**Пропорциональный контуринг** - Визуально уравновесить доминирующие черты"
+        ],
+        difficulty: 'medium',
+        timeframe: '3-12 месяцев'
+    },
+
     potential: {
         title: "Улучшение качества фото",
         problem: "Низкое качество фотографии снижает точность анализа",
@@ -121,37 +176,15 @@ export function analyzeScores(scores: AnalysisScores): {
     improvements: MetricInsight[];
 } {
     const metrics: MetricInsight[] = [
-        {
-            metric: 'jawline',
-            label: 'Jawline',
-            value: scores.jawline,
-            status: getStatus(scores.jawline),
-        },
-        {
-            metric: 'cheekbones',
-            label: 'Cheekbones',
-            value: scores.cheekbones,
-            status: getStatus(scores.cheekbones),
-        },
-
-        {
-            metric: 'masculinity',
-            label: 'Masculinity',
-            value: scores.masculinity,
-            status: getStatus(scores.masculinity),
-        },
-        {
-            metric: 'eyes',
-            label: 'Eyes',
-            value: scores.eyes,
-            status: getStatus(scores.eyes),
-        },
-        {
-            metric: 'facial_thirds',
-            label: 'Facial Thirds',
-            value: scores.facial_thirds,
-            status: getStatus(scores.facial_thirds),
-        },
+        { metric: 'jawline', label: 'Jawline', value: scores.jawline, status: getStatus(scores.jawline) },
+        { metric: 'cheekbones', label: 'Cheekbones', value: scores.cheekbones, status: getStatus(scores.cheekbones) },
+        { metric: 'masculinity', label: 'Masculinity', value: scores.masculinity, status: getStatus(scores.masculinity) },
+        { metric: 'eyes', label: 'Eyes', value: scores.eyes, status: getStatus(scores.eyes) },
+        { metric: 'facial_thirds', label: 'Facial Thirds', value: scores.facial_thirds, status: getStatus(scores.facial_thirds) },
+        { metric: 'nose', label: 'Nose', value: scores.nose, status: getStatus(scores.nose) },
+        { metric: 'forehead', label: 'Forehead', value: scores.forehead, status: getStatus(scores.forehead) },
+        { metric: 'symmetry', label: 'Symmetry', value: scores.symmetry, status: getStatus(scores.symmetry) },
+        { metric: 'harmony', label: 'Harmony', value: scores.harmony, status: getStatus(scores.harmony) },
     ];
 
     // Add potential if it's significantly different from overall
