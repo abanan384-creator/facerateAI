@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Mode, ScanState, ErrCode, Warning } from '@/lib/state';
+import { Mode, ScanState, ErrCode, Warning, AnalysisScores } from '@/lib/state';
 import { detectFace, scoreFace } from '@/lib/analyzeFace';
 import { UploadCard } from '@/components/UploadCard';
 import { StatusPanel } from '@/components/StatusPanel';
@@ -111,7 +111,7 @@ export default function Home() {
         setTimeout(async () => {
             try {
                 if (!imgRef.current) throw new Error("No image ref");
-                const analysis = await scoreFace(imgRef.current);
+                const analysis = await scoreFace(imgRef.current, mode);
                 setState({
                     status: 'result',
                     mode,
@@ -191,6 +191,7 @@ export default function Home() {
                             previewUrl={(state as any).previewUrl}
                             showCamera={showCamera}
                             setShowCamera={setShowCamera}
+                            landmarks={state.status === 'result' ? state.scores.landmarks : undefined}
                             onUpload={async (e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
@@ -248,7 +249,7 @@ export default function Home() {
                     <div className="flex flex-col items-center lg:items-start w-full min-h-[400px] gap-6">
                         {state.status === 'result' ? (
                             <>
-                                <ScoreRing scores={state.scores} />
+                                <ScoreRing scores={state.scores} mode={state.mode} />
                                 <ResultCard
                                     scores={state.scores}
                                     warnings={state.warnings}
@@ -275,7 +276,7 @@ export default function Home() {
                             </h2>
                             <div className="h-px w-16 bg-primary/20 mx-auto" />
                         </div>
-                        <AnalysisGrid scores={state.scores} />
+                        <AnalysisGrid scores={state.scores} mode={state.mode} />
                     </div>
                 )}
             </div>

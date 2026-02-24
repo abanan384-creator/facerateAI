@@ -166,12 +166,12 @@ export interface MetricInsight {
     status: 'excellent' | 'good' | 'average' | 'needs_improvement';
 }
 
-import { AnalysisScores } from './state';
+import { AnalysisScores, Mode } from './state';
 
 /**
  * Analyze scores and return insights
  */
-export function analyzeScores(scores: AnalysisScores): {
+export function analyzeScores(scores: AnalysisScores, mode: Mode = 'front'): {
     strengths: MetricInsight[];
     improvements: MetricInsight[];
 } {
@@ -183,9 +183,12 @@ export function analyzeScores(scores: AnalysisScores): {
         { metric: 'facial_thirds', label: 'Facial Thirds', value: scores.facial_thirds, status: getStatus(scores.facial_thirds) },
         { metric: 'nose', label: 'Nose', value: scores.nose, status: getStatus(scores.nose) },
         { metric: 'forehead', label: 'Forehead', value: scores.forehead, status: getStatus(scores.forehead) },
-        { metric: 'symmetry', label: 'Symmetry', value: scores.symmetry, status: getStatus(scores.symmetry) },
         { metric: 'harmony', label: 'Harmony', value: scores.harmony, status: getStatus(scores.harmony) },
     ];
+
+    if (mode !== 'side') {
+        metrics.push({ metric: 'symmetry', label: 'Symmetry', value: scores.symmetry, status: getStatus(scores.symmetry) });
+    }
 
     // Add potential if it's significantly different from overall
     if (scores.potential > scores.jawline + 10 ||

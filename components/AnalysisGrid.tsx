@@ -1,11 +1,12 @@
 
 import React, { useState } from 'react';
-import { AnalysisScores } from '@/lib/state';
+import { AnalysisScores, Mode } from '@/lib/state';
 import { analyzeScores, RECOMMENDATIONS, MetricInsight } from '@/lib/recommendations';
 import { generateVerdict } from '@/lib/verdict';
 
 interface AnalysisGridProps {
     scores: AnalysisScores;
+    mode: Mode;
 }
 
 const MetricBox = ({ insight, type }: { insight: MetricInsight, type: 'strength' | 'improvement' }) => {
@@ -56,9 +57,9 @@ const MetricBox = ({ insight, type }: { insight: MetricInsight, type: 'strength'
     );
 };
 
-export const AnalysisGrid = ({ scores }: AnalysisGridProps) => {
-    const { strengths, improvements } = analyzeScores(scores);
-    const verdict = generateVerdict(scores);
+export const AnalysisGrid = ({ scores, mode }: AnalysisGridProps) => {
+    const { strengths, improvements } = analyzeScores(scores, mode);
+    const verdict = generateVerdict(scores, mode);
 
     return (
         <div className="w-full space-y-8">

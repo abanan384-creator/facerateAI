@@ -15,6 +15,7 @@ export interface AnalysisScores {
     harmony: number;
     overall: number;
     potential: number;
+    landmarks?: { x: number; y: number }[];
 }
 
 // State Machine States

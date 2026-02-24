@@ -2,6 +2,7 @@
 import React, { useRef, useState } from 'react';
 import { Mode } from '@/lib/state';
 import { Upload, Camera, X, RefreshCcw } from 'lucide-react';
+import { drawAnalysis } from '@/lib/visualize';
 
 interface UploadCardProps {
     mode: Mode;
@@ -11,6 +12,7 @@ interface UploadCardProps {
     onCameraCapture: (img: string) => void;
     onClear: () => void;
     setShowCamera: (show: boolean) => void;
+    landmarks?: { x: number; y: number }[];
 }
 
 export const UploadCard = ({
@@ -20,10 +22,12 @@ export const UploadCard = ({
     onUpload,
     onCameraCapture,
     setShowCamera,
-    onClear
+    onClear,
+    landmarks
 }: UploadCardProps) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const overlayRef = useRef<HTMLCanvasElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
@@ -76,6 +80,45 @@ export const UploadCard = ({
         return () => stopCamera();
     }, [showCamera, facingMode]);
 
+    React.useEffect(() => {
+        if (landmarks && overlayRef.current && previewUrl) {
+            const canvas = overlayRef.current;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                const img = new Image();
+                img.src = previewUrl;
+                img.onload = () => {
+                    // Set canvas size to match displayed container size
+                    const rect = canvas.getBoundingClientRect();
+                    canvas.width = rect.width;
+                    canvas.height = rect.height;
+
+                    // Calculate scaling to match object-cover behavior
+                    const imgRatio = img.naturalWidth / img.naturalHeight;
+                    const canvasRatio = canvas.width / canvas.height;
+
+                    let scale, offsetX = 0, offsetY = 0;
+                    if (imgRatio > canvasRatio) {
+                        // Image is wider than canvas
+                        scale = canvas.height / img.naturalHeight;
+                        offsetX = (canvas.width - img.naturalWidth * scale) / 2;
+                    } else {
+                        // Image is taller or same
+                        scale = canvas.width / img.naturalWidth;
+                        offsetY = (canvas.height - img.naturalHeight * scale) / 2;
+                    }
+
+                    const scaledLandmarks = landmarks.map(l => ({
+                        x: l.x * scale + offsetX,
+                        y: l.y * scale + offsetY
+                    }));
+
+                    drawAnalysis(ctx, scaledLandmarks, canvas.width, canvas.height);
+                };
+            }
+        }
+    }, [landmarks, previewUrl]);
+
 
     return (
         <div className="relative w-full aspect-square max-w-sm rounded-lg overflow-hidden border border-text/10 bg-surface flex items-center justify-center">
@@ -113,6 +156,12 @@ export const UploadCard = ({
                         alt="Preview"
                         className="w-full h-full object-cover"
                     />
+                    {landmarks && (
+                        <canvas
+                            ref={overlayRef}
+                            className="absolute inset-0 w-full h-full pointer-events-none"
+                        />
+                    )}
                     <button
                         onClick={onClear}
                         className="absolute top-3 right-3 p-2 bg-bg/80 rounded-md text-text/50 hover:text-text transition-opacity duration-150 opacity-0 group-hover:opacity-100"

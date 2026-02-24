@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Camera, X } from 'lucide-react';
+import { Camera, X, RefreshCw } from 'lucide-react';
 
 interface CameraCaptureProps {
     onCapture: (imageSrc: string) => void;
@@ -9,6 +9,7 @@ interface CameraCaptureProps {
 export const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [error, setError] = useState<string | null>(null);
+    const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
 
     useEffect(() => {
         let stream: MediaStream | null = null;
@@ -16,7 +17,7 @@ export const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
         const startCamera = async () => {
             try {
                 stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }
+                    video: { facingMode: facingMode, width: { ideal: 1280 }, height: { ideal: 720 } }
                 });
                 if (videoRef.current) {
                     videoRef.current.srcObject = stream;
@@ -34,7 +35,11 @@ export const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
                 stream.getTracks().forEach(track => track.stop());
             }
         };
-    }, []);
+    }, [facingMode]);
+
+    const toggleCamera = () => {
+        setFacingMode((prev: 'user' | 'environment') => prev === 'user' ? 'environment' : 'user');
+    };
 
     const capture = () => {
         if (!videoRef.current) return;
@@ -45,8 +50,6 @@ export const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
 
         const ctx = canvas.getContext('2d');
         if (ctx) {
-            ctx.translate(canvas.width, 0);
-            ctx.scale(-1, 1);
             ctx.drawImage(videoRef.current, 0, 0);
 
             const imageSrc = canvas.toDataURL('image/jpeg');
@@ -71,7 +74,7 @@ export const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
                             ref={videoRef}
                             autoPlay
                             playsInline
-                            className="w-full h-full object-cover transform -scale-x-100"
+                            className="w-full h-full object-cover"
                         />
                     )}
                 </div>
@@ -84,6 +87,14 @@ export const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
                     >
                         <Camera className="w-4 h-4" />
                         Take Photo
+                    </button>
+                    <button
+                        onClick={toggleCamera}
+                        disabled={!!error}
+                        className="flex items-center gap-2 px-4 py-3 bg-surface text-text rounded-md text-xs font-bold uppercase tracking-widest transition-opacity duration-150 hover:bg-text/5 disabled:opacity-30 disabled:cursor-not-allowed border border-text/10"
+                        title="Switch Camera"
+                    >
+                        <RefreshCw className="w-4 h-4" />
                     </button>
                 </div>
             </div>

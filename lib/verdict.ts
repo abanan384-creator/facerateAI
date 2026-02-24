@@ -1,5 +1,4 @@
-
-import { AnalysisScores } from './state';
+import { AnalysisScores, Mode } from './state';
 import { analyzeScores } from './recommendations';
 
 export interface FinalVerdict {
@@ -8,8 +7,8 @@ export interface FinalVerdict {
     overallRating: 'elite' | 'high' | 'solid' | 'potential';
 }
 
-export function generateVerdict(scores: AnalysisScores): FinalVerdict {
-    const { strengths, improvements } = analyzeScores(scores);
+export function generateVerdict(scores: AnalysisScores, mode: Mode = 'front'): FinalVerdict {
+    const { strengths, improvements } = analyzeScores(scores, mode);
 
     let summary = "";
     let primaryFocus = "";

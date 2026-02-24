@@ -135,7 +135,7 @@ export async function detectFace(img: HTMLImageElement, mode: Mode): Promise<Det
 /**
  * 2. SCORE (Calculate Ratios + Quality)
  */
-export async function scoreFace(img: HTMLImageElement): Promise<FullAnalysisResult> {
+export async function scoreFace(img: HTMLImageElement, mode: Mode = 'front'): Promise<FullAnalysisResult> {
     const det = await getDetector();
     const faces = await det.estimateFaces(img);
     const face = faces[0];
@@ -263,7 +263,7 @@ export async function scoreFace(img: HTMLImageElement): Promise<FullAnalysisResu
 
     const avg_sym_delta = (sym_eyes + sym_cheeks + sym_jaw + sym_mouth + sym_nose_ala) / 5;
     // 0% asymmetry → 100, 10% asymmetry → ~50, 20%+ → 0
-    const symmetry = Math.round(clamp(100 - avg_sym_delta * 500, 0, 100));
+    const symmetry = mode === 'side' ? 0 : Math.round(clamp(100 - avg_sym_delta * 500, 0, 100));
 
     // ── JAWLINE ────────────────────────────────────────────────────────────────
     const jawline = Math.round(
@@ -283,25 +283,44 @@ export async function scoreFace(img: HTMLImageElement): Promise<FullAnalysisResu
     // ── HARMONY ────────────────────────────────────────────────────────────────
     // Weighted average of structural metrics (excluding masculinity/potential)
     const harmony = Math.round(
-        0.20 * jawline +
-        0.15 * cheekbones +
-        0.20 * eyes +
-        0.15 * nose +
-        0.15 * clamp(thirds_score, 0, 100) +
-        0.15 * symmetry
+        mode === 'side' ? (
+            0.25 * jawline +
+            0.20 * cheekbones +
+            0.25 * eyes +
+            0.15 * nose +
+            0.15 * clamp(thirds_score, 0, 100)
+        ) : (
+            0.20 * jawline +
+            0.15 * cheekbones +
+            0.20 * eyes +
+            0.15 * nose +
+            0.15 * clamp(thirds_score, 0, 100) +
+            0.15 * symmetry
+        )
     );
 
     // ── OVERALL ────────────────────────────────────────────────────────────────
     const overall = Math.round(
-        0.14 * jawline +
-        0.11 * cheekbones +
-        0.11 * masculinity +
-        0.14 * eyes +
-        0.11 * clamp(thirds_score, 0, 100) +
-        0.12 * nose +
-        0.10 * forehead +
-        0.13 * symmetry +
-        0.04 * harmony   // harmony is derived, small weight to avoid double-counting
+        mode === 'side' ? (
+            0.16 * jawline +
+            0.13 * cheekbones +
+            0.13 * masculinity +
+            0.16 * eyes +
+            0.13 * clamp(thirds_score, 0, 100) +
+            0.14 * nose +
+            0.11 * forehead +
+            0.04 * harmony
+        ) : (
+            0.14 * jawline +
+            0.11 * cheekbones +
+            0.11 * masculinity +
+            0.14 * eyes +
+            0.11 * clamp(thirds_score, 0, 100) +
+            0.12 * nose +
+            0.10 * forehead +
+            0.13 * symmetry +
+            0.04 * harmony   // harmony is derived, small weight to avoid double-counting
+        )
     );
 
     // ── QUALITY / POTENTIAL ────────────────────────────────────────────────────
@@ -332,5 +351,6 @@ export async function scoreFace(img: HTMLImageElement): Promise<FullAnalysisResu
         overall,
         potential: finalPotential,
         warnings,
+        landmarks: keypoints.map(kp => ({ x: kp.x, y: kp.y })),
     };
 }

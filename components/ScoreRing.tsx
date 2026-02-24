@@ -1,9 +1,10 @@
 
 import React, { useState } from 'react';
-import { AnalysisScores } from '@/lib/state';
+import { AnalysisScores, Mode } from '@/lib/state';
 
 interface ScoreRingProps {
     scores: AnalysisScores;
+    mode: Mode;
 }
 
 // --- Referral links per metric per zone ---
@@ -108,13 +109,13 @@ function DonutRing({ segments }: { segments: { color: string; count: number }[] 
     const r = (size - strokeWidth) / 2;
     const circumference = 2 * Math.PI * r;
     const gap = 6; // gap in px between segments
-    const total = METRICS.length;
+    const total = segments.length;
 
     const segmentLength = (circumference - gap * total) / total;
 
     // Build stroke-dasharray/offset for each metric
     let offset = 0;
-    const arcs = METRICS.map((m, i) => {
+    const arcs = segments.map((s, i) => {
         const dashOffset = circumference - offset;
         const piece = { offset: dashOffset, color: segments[i].color, segLen: segmentLength };
         offset += segmentLength + gap;
@@ -219,8 +220,10 @@ function ZoneRow({ color, metrics }: { color: 'green' | 'yellow' | 'red'; metric
     );
 }
 
-export const ScoreRing = ({ scores }: ScoreRingProps) => {
-    const segmentColors = METRICS.map((m) => {
+export const ScoreRing = ({ scores, mode }: ScoreRingProps) => {
+    const activeMetrics = mode === 'side' ? METRICS.filter(m => m !== 'symmetry') : METRICS;
+
+    const segmentColors = activeMetrics.map((m) => {
         const val = scores[m as keyof AnalysisScores] as number;
         return { metric: m, color: getColor(val), hex: COLOR_HEX[getColor(val)] };
     });
