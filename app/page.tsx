@@ -253,6 +253,7 @@ export default function Home() {
                                 <ResultCard
                                     scores={state.scores}
                                     warnings={state.warnings}
+                                    mode={state.mode}
                                     onClear={handleClear}
                                     onRescan={handleGetRatings}
                                     onShare={() => {

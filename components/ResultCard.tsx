@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { AnalysisScores, Warning } from '@/lib/state';
+import { AnalysisScores, Warning, Mode } from '@/lib/state';
 
 interface ResultCardProps {
     scores: AnalysisScores;
@@ -8,6 +8,7 @@ interface ResultCardProps {
     onClear: () => void;
     onRescan: () => void;
     onShare: () => void;
+    mode: Mode;
 }
 
 const ProgressBar = ({ value }: { value: number }) => (
@@ -33,7 +34,7 @@ const Metric = ({ label, value, highlight }: { label: string; value: number; hig
     </div>
 );
 
-export const ResultCard = ({ scores, warnings, onClear, onRescan, onShare }: ResultCardProps) => {
+export const ResultCard = ({ scores, warnings, onClear, onRescan, onShare, mode }: ResultCardProps) => {
     return (
         <div className="w-full max-w-sm bg-surface border border-text/10 rounded-lg p-8">
             {/* Header Score */}
@@ -50,7 +51,7 @@ export const ResultCard = ({ scores, warnings, onClear, onRescan, onShare }: Res
             <div className="space-y-1">
                 <Metric label="Potential" value={scores.potential} highlight />
                 <Metric label="Eyes" value={scores.eyes} />
-                <Metric label="Symmetry" value={scores.symmetry} />
+                {mode !== 'side' && <Metric label="Symmetry" value={scores.symmetry} />}
                 <Metric label="Harmony" value={scores.harmony} />
                 <Metric label="Jawline" value={scores.jawline} />
                 <Metric label="Cheekbones" value={scores.cheekbones} />

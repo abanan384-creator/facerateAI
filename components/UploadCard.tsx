@@ -113,7 +113,7 @@ export const UploadCard = ({
                         y: l.y * scale + offsetY
                     }));
 
-                    drawAnalysis(ctx, scaledLandmarks, canvas.width, canvas.height);
+                    drawAnalysis(ctx, scaledLandmarks, canvas.width, canvas.height, mode);
                 };
             }
         }

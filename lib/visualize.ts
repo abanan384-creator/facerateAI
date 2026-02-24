@@ -1,3 +1,4 @@
+import { Mode } from './state';
 
 /**
  * Utility to visualize facial analysis metrics on a canvas
@@ -31,7 +32,8 @@ export function drawAnalysis(
     ctx: CanvasRenderingContext2D,
     landmarks: { x: number; y: number }[],
     width: number,
-    height: number
+    height: number,
+    mode: Mode = 'front'
 ) {
     if (!landmarks || landmarks.length === 0) return;
 
@@ -97,6 +99,8 @@ export function drawAnalysis(
     drawHLine(yBrows);
     drawHLine(yNose);
     drawHLine(yChin);
+
+    if (mode === 'side') return;
 
     // 3. Draw Facial Fifths (Indigo Lines)
     // Vertical lines separating: Ear-Eye, Eye, Inter-eye, Eye, Eye-Ear
