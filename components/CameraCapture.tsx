@@ -50,6 +50,13 @@ export const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
 
         const ctx = canvas.getContext('2d');
         if (ctx) {
+            // If it's the front camera, browsers provide a mirrored stream.
+            // We flip it horizontally to get the "real" (non-mirrored) view on the final photo.
+            if (facingMode === 'user') {
+                ctx.translate(canvas.width, 0);
+                ctx.scale(-1, 1);
+            }
+
             ctx.drawImage(videoRef.current, 0, 0);
 
             const imageSrc = canvas.toDataURL('image/jpeg');
