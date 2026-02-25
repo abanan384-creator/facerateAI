@@ -50,12 +50,7 @@ export const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
 
         const ctx = canvas.getContext('2d');
         if (ctx) {
-            // If it's the front camera, browsers provide a mirrored stream.
-            // We flip it horizontally to get the "real" (non-mirrored) view on the final photo.
-            if (facingMode === 'user') {
-                ctx.translate(canvas.width, 0);
-                ctx.scale(-1, 1);
-            }
+            if (facingMode === 'user') ctx.setTransform(-1, 0, 0, 1, canvas.width, 0);
 
             ctx.drawImage(videoRef.current, 0, 0);
 
@@ -81,7 +76,7 @@ export const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
                             ref={videoRef}
                             autoPlay
                             playsInline
-                            className="w-full h-full object-cover"
+                            className={`w-full h-full object-cover ${facingMode === 'user' ? '-scale-x-100' : ''}`}
                         />
                     )}
                 </div>
