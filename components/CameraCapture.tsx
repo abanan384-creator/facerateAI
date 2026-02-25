@@ -50,7 +50,8 @@ export const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
 
         const ctx = canvas.getContext('2d');
         if (ctx) {
-            ctx.drawImage(videoRef.current, 0, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(videoRef.current, -canvas.width, 0);
 
             const imageSrc = canvas.toDataURL('image/jpeg');
             onCapture(imageSrc);
@@ -75,6 +76,7 @@ export const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
                             autoPlay
                             playsInline
                             className="w-full h-full object-cover"
+                            style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
                         />
                     )}
                 </div>
