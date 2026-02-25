@@ -124,7 +124,12 @@ export const UploadCard = ({
         <div className="relative w-full aspect-square max-w-sm rounded-lg overflow-hidden border border-text/10 bg-surface flex items-center justify-center">
             {showCamera ? (
                 <div className="absolute inset-0 bg-text flex flex-col items-center justify-center p-4">
-                    <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover rounded-md mb-4" />
+                    <video
+                        ref={videoRef}
+                        autoPlay
+                        playsInline
+                        className={`w-full h-full object-cover rounded-md mb-4 ${facingMode === 'user' ? '-scale-x-100' : ''}`}
+                    />
                     <canvas ref={canvasRef} className="hidden" />
                     <div className="flex gap-3">
                         <button

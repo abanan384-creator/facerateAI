@@ -14,7 +14,7 @@
 Теперь **Facial Thirds** корректно измеряет равенство трёх вертикальных зон лица:
 
 1. **Верхняя треть** (Upper Third): Линия волос → Глабелла (между бровями)
-   - Landmarks: `forehead_top (10)` → `nasion (168)`
+   - Landmarks: `forehead_top (151)` → `nasion (168)`
 
 2. **Средняя треть** (Middle Third): Глабелла → Субназале (под носом)
    - Landmarks: `nasion (168)` → `subnasale (2)`

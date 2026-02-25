@@ -26,18 +26,18 @@ const dist = (p1: { x: number; y: number }, p2: { x: number; y: number }) =>
 // Landmark Indices (MediaPipe Face Mesh 468 points)
 const INDICES = {
     // Face outline
-    forehead_top: 10,
+    forehead_top: 151,
     chin_bottom: 152,
     face_left: 234,
     face_right: 454,
 
-    // Jaw
-    jaw_left: 172,
-    jaw_right: 397,
+    // Jaw (Gonion - skeletal angle of the mandible)
+    jaw_left: 132,
+    jaw_right: 361,
 
-    // Cheekbones (zygomatic)
-    cheek_left: 123,
-    cheek_right: 352,
+    // Cheekbones (Zygomatic Arch - most lateral bony points)
+    cheek_left: 227,
+    cheek_right: 447,
 
     // Mouth
     mouth_bottom: 14,
@@ -55,8 +55,8 @@ const INDICES = {
     subnasale: 2,
 
     // Forehead width (temples)
-    temple_left: 54,
-    temple_right: 284,
+    temple_left: 103,
+    temple_right: 332,
 
     // Eyes
     eye_left_inner: 133,
